@@ -2,16 +2,19 @@
   "name": "MaxiTaxi",
   "private": true,
   "version": "0.0.1",
+  "proxy": "http://localhost:8080",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host 0.0.0.0",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test.e2e": "cypress run",
     "test.unit": "vitest",
-    "lint": "eslint"
+    "lint": "eslint",
+    "start": "ionic serve"
   },
   "dependencies": {
+    "@capacitor/android": "7.0.1",
     "@capacitor/app": "7.0.0",
     "@capacitor/core": "7.0.1",
     "@capacitor/haptics": "7.0.0",
@@ -28,6 +31,7 @@
     "react-router-dom": "^5.3.4"
   },
   "devDependencies": {
+    "@ionic/cli": "^7.0.0",
     "@capacitor/cli": "7.0.1",
     "@testing-library/dom": ">=7.21.4",
     "@testing-library/jest-dom": "^5.16.5",

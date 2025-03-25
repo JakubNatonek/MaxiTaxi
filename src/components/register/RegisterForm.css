@@ -1,0 +1,65 @@
+.register-background {
+  --background: #fe7f00;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  padding: 24px;
+  min-height: 100vh;
+  color: #fff;
+}
+
+.register-logo {
+  display: flex;
+  justify-content: center;
+  margin-top: 40px;
+}
+
+.register-logo img {
+  width: 100%;
+  height: auto;
+}
+
+.register-welcome-text {
+  text-align: center;
+  margin-top: 24px;
+  margin-bottom: 8px;
+}
+
+.register-form {
+  margin-top: 0px;
+}
+
+.register-input {
+  --background: transparent;
+  --color: #fff;
+  border-bottom: 1px solid white;
+  border-radius: 0;
+  margin-top: 12px;
+}
+
+.register-input .label-text,
+.register-input input {
+  color: white;
+}
+
+.register-button {
+  --background: #1c1c1c;
+  --color: white;
+  font-weight: bold;
+  margin-top: 20
+}
+
+.login-input ion-input {
+  text-align: center;
+  color: #000000;
+}
+
+.register-bottom-image {
+  display: flex;
+}
+
+.register-bottom-image img {
+  width: 100%;
+  height: auto;
+
+}

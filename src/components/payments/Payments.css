@@ -1,0 +1,78 @@
+.payments-background {
+    --background: #1c1c1c;
+    color: white;
+    padding: 16px;
+  }
+  
+  .credit-card {
+    background: #8581e9;
+    color: white;
+    border-radius: 16px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+  }
+  
+  .card-visual {
+    padding: 16px;
+    border-radius: 12px;
+    background: linear-gradient(100deg, #333, #555);
+    position: relative;
+    margin-bottom: 16px;
+  }
+  
+  .chip {
+    width: 40px;
+    height: 30px;
+    background: gold;
+    border-radius: 6px;
+    margin-bottom: 12px;
+  }
+  
+  .card-number {
+    font-size: 1.4rem;
+    letter-spacing: 2px;
+    margin-bottom: 16px;
+  }
+  
+  .card-details {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    color: #ccc;
+  }
+  
+  .add-card-form {
+    background: #000000;
+    color: #000;
+    border-radius: 16px;
+    margin-top: 24px;
+  }
+  
+  .add-card-form ion-item {
+    --background: transparent;
+  }
+  
+  .save-button {
+    margin-top: 16px;
+    --background: #1c1c1c;
+    --color: white;
+    font-weight: bold;
+    border-radius: 20px;
+  }
+
+  .extra-cards {
+    margin-top: 24px;
+    color: white;
+  }
+  
+  .credit-card.small .card-number {
+    font-size: 1.1rem;
+  }
+  
+  .extra-cards h3 {
+    margin-left: 12px;
+    margin-bottom: 8px;
+    font-size: 1.1rem;
+    color: #fff;
+  }
+  
+  
