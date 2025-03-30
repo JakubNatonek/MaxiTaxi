@@ -16,6 +16,7 @@ import {
   IonButton,
   IonButtons,
   IonBackButton,
+  IonMenuButton,
 } from "@ionic/react";
 import { cardOutline, addCircleOutline } from "ionicons/icons";
 import "./Payments.css";
@@ -57,8 +58,9 @@ const Payments: React.FC = () => {
       <IonHeader>
         <IonToolbar color="custom-orange">
           <IonButtons slot="start">
-            <IonBackButton defaultHref="/map" text="Powrót" />
+            <IonMenuButton />
           </IonButtons>
+          <IonTitle className="toolbar-logo-title" />
           <IonTitle>Płatności</IonTitle>
         </IonToolbar>
       </IonHeader>

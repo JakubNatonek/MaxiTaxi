@@ -14,7 +14,16 @@ import {
 import { useHistory } from "react-router-dom";
 import "./RegisterForm.css";
 
-const RegisterForm: React.FC = () => {
+
+
+interface RegisterFormProps {
+  SERVER: string;
+  onLoginStateChange: (isLogin: boolean) => void;
+  handlePageChange: (page: string) => void;
+}
+
+const RegisterForm: React.FC<RegisterFormProps> = ({ SERVER, onLoginStateChange, handlePageChange}) => {
+
   const emailRef = useRef<HTMLIonInputElement>(null);
   const passRef = useRef<HTMLIonInputElement>(null);
   const confirmRef = useRef<HTMLIonInputElement>(null);
@@ -53,10 +62,8 @@ const RegisterForm: React.FC = () => {
   };
 
   const goToLogin = () => {
-    history.push("/login");
+    handlePageChange("login");
   };
-
-  const SERVER = "localhost:8080"
   
   const SALT = "tjM6O3MeXFEHUPOj"
 

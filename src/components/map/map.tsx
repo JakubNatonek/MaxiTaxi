@@ -21,22 +21,11 @@ import {
   IonMenuToggle,
 } from "@ionic/react";
 
-import {
-  personOutline,
-  walletOutline,
-  cardOutline,
-  callOutline,
-  notificationsOutline,
-  peopleOutline,
-  heartOutline,
-  globeOutline,
-  informationCircleOutline,
-  logOutOutline,
-} from "ionicons/icons";
 
 import "./map.css";
 
-import { useHistory } from "react-router-dom";
+import Sidebar from "../side_bar/Sidebar";
+
 
 interface MapComponentProps {
   latitude?: number;
@@ -49,16 +38,6 @@ const MapComponent: React.FC<MapComponentProps> = ({ latitude, longitude }) => {
   const [mapLatitudeQ, setMapLatitudeQ] = useState<number | null>(null);
   const [mapLongitudeQ, setMapLongitudeQ] = useState<number | null>(null);
 
-  const history = useHistory();
-
-  const handleLogout = () => {
-    // localStorage.removeItem("user"); // ← Jeśli przechowujesz dane
-    history.push("/login");
-  };
-
-  const goToPayments = () => {
-    history.push("/payments");
-  };
 
   const getUserLocation = () => {
     if (navigator.geolocation) {
@@ -106,52 +85,6 @@ const MapComponent: React.FC<MapComponentProps> = ({ latitude, longitude }) => {
 
   return (
     <IonApp>
-      <IonSplitPane contentId="main">
-        {/* ===== MENU BOCZNE ===== */}
-        <IonMenu contentId="main" type="overlay">
-          <IonHeader>
-            <IonToolbar color="custom-orange">
-              <IonTitle >Menu</IonTitle>
-            </IonToolbar>
-          </IonHeader>
-          <IonContent>
-            <div style={{ textAlign: "center", padding: "20px" }}>
-              <h3 style={{ margin: 0 }}>Jan Wiewiór</h3> 
-              <p style={{ fontSize: "12px", color: "#555" }}>@gmail.com</p>
-            </div>
-            <IonList>
-              <IonMenuToggle autoHide={false}>
-                <IonItem button>
-                  <IonIcon icon={personOutline} slot="start" />
-                  <IonLabel>Przejazdy</IonLabel>
-                </IonItem>
-                <IonItem button>
-                  <IonIcon icon={walletOutline} slot="start" />
-                  <IonLabel>Portfel</IonLabel>
-                </IonItem>
-                <IonItem button onClick={goToPayments}>
-                  <IonIcon icon={cardOutline} slot="start" />
-                    <IonLabel>Płatności</IonLabel>
-                  </IonItem>
-                <IonItem button>
-                        <IonIcon icon={peopleOutline} slot="start" />
-                  <IonLabel>Czaty</IonLabel>
-                </IonItem>
-                <IonItem button>
-                  <IonIcon icon={informationCircleOutline} slot="start" />
-                  <IonLabel>O Nas</IonLabel>
-                </IonItem>
-
-                {/* ===== WYLOGUJ ===== */}
-                <IonItem button onClick={handleLogout}>
-                  <IonIcon icon={logOutOutline} slot="start" />
-                  <IonLabel>Wyloguj się</IonLabel>
-                </IonItem>
-              </IonMenuToggle>
-            </IonList>
-          </IonContent>
-        </IonMenu>
-
         {/* ===== STRONA MAPY ===== */}
         <IonPage id="main">
           <IonHeader>
@@ -191,7 +124,6 @@ const MapComponent: React.FC<MapComponentProps> = ({ latitude, longitude }) => {
             </IonRow>
           </IonContent>
         </IonPage>
-      </IonSplitPane>
     </IonApp>
   );
 };

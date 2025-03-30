@@ -1,11 +1,12 @@
 import React, { useState } from "react";
 import {
   IonApp,
+  IonContent,
+  IonPage,
   IonRouterOutlet,
   setupIonicReact,
 } from "@ionic/react";
-import { IonReactRouter } from "@ionic/react-router";
-import { Redirect, Route } from "react-router-dom";
+
 
 import "./theme/variables.css";
 import "@ionic/react/css/core.css";
@@ -14,49 +15,32 @@ import "@ionic/react/css/structure.css";
 import "@ionic/react/css/typography.css";
 import "@ionic/react/css/palettes/dark.system.css";
 
-import LoginForm from "./components/login_form/LoginForm";
-import RegisterForm from "./components/register/RegisterForm";
-import MapComponent from "./components/map/map";
-import Payments from "./components/payments/Payments";
+
+import Autentication from "./components/autentication/Autentication";
+import MainView from "./components/main_view/MainView";
+
 
 setupIonicReact();
 
 const App: React.FC = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentPage, setCurrentPage] = useState("Autentication"); 
   const SERVER = "http://localhost:8080";
 
-  const handleLoginStateChange = (loggedIn: boolean) => {
-    setIsLoggedIn(loggedIn);
+  const handlePageChange = (page: string) => {
+    setCurrentPage(page);
   };
 
   return (
     <IonApp>
-      <IonReactRouter>
-        <IonRouterOutlet>
-          <Route path="/login" exact>
-            <LoginForm
-              SERVER={SERVER}
-              onLoginStateChange={handleLoginStateChange}
-            />
-          </Route>
+      <IonPage>
+        <IonContent>
+          {currentPage === "Autentication" && (
+            <Autentication SERVER={SERVER} handleMainPageChange={handlePageChange}/>
+          )}
+          {currentPage === "MainView" && <MainView />}
+        </IonContent>
+      </IonPage>
 
-          <Route path="/register" exact>
-            <RegisterForm />
-          </Route>
-
-          <Route path="/map" exact>
-            <MapComponent />
-          </Route>
-
-          <Route path="/payments" exact>
-            <Payments />
-          </Route>
-
-          <Route exact path="/">
-            <Redirect to={isLoggedIn ? "/map" : "/login"} />
-          </Route>
-        </IonRouterOutlet>
-      </IonReactRouter>
     </IonApp>
   );
 };

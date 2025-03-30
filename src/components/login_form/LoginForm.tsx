@@ -17,9 +17,10 @@ import "./LoginForm.css";
 interface LoginFormProps {
   SERVER: string;
   onLoginStateChange: (isLogin: boolean) => void;
+  handlePageChange: (page: string) => void;
 }
 
-const LoginForm: React.FC<LoginFormProps> = ({ SERVER, onLoginStateChange }) => {
+const LoginForm: React.FC<LoginFormProps> = ({ SERVER, onLoginStateChange, handlePageChange }) => {
   const SALT = "tjM6O3MeXFEHUPOj";
   const emailInputRef = useRef<HTMLIonInputElement>(null);
   const passwordInputRef = useRef<HTMLIonInputElement>(null);
@@ -60,21 +61,28 @@ const LoginForm: React.FC<LoginFormProps> = ({ SERVER, onLoginStateChange }) => 
     return hashHex;
   };
 
-  const login = async () => {
+  const login = () => {
     if (validateForm()) {
       const email = String(emailInputRef.current!.value).trim();
       const passwordRaw = String(passwordInputRef.current!.value).trim();
-      const hashedPassword = await hashPassword(passwordRaw, SALT);
 
-      // Symulacja logowania (przykładowe dane)
-      if (email === "kamil@gmail.com" && hashedPassword === await hashPassword("123456", SALT)) {
-        onLoginStateChange(false);
-        history.push("/map");
-      } else {
-        alert("Nieprawidłowe dane logowania");
-      }
+      hashPassword(passwordRaw, SALT)
+        .then((hashedPassword) => {
+          const validEmail = "kamil@gmail.com";
+          const validPassword = "123456";
+  
+          return hashPassword(validPassword, SALT)
+            .then((validHashedPassword) => {
+              if (email === validEmail && hashedPassword === validHashedPassword) {
+                onLoginStateChange(true);
+              } else {
+                alert("Nieprawidłowe dane logowania");
+              }
+            });
+        });
     }
   };
+  
 
   return (
     <IonApp>
@@ -132,7 +140,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ SERVER, onLoginStateChange }) => 
                 <small>
                   Nie masz konta?{" "}
                   <span
-                    onClick={() => history.push("/register")}
+                    onClick={() => {handlePageChange("register")} }
                     className="register-link"
                     style={{ cursor: "pointer", textDecoration: "underline" }}
                   >
