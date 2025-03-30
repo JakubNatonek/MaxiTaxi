@@ -18,9 +18,10 @@ interface LoginFormProps {
   SERVER: string;
   onLoginStateChange: (isLogin: boolean) => void;
   handlePageChange: (page: string) => void;
+  hashPassword: (password: string, salt: string) => Promise<string>;
 }
 
-const LoginForm: React.FC<LoginFormProps> = ({ SERVER, onLoginStateChange, handlePageChange }) => {
+const LoginForm: React.FC<LoginFormProps> = ({ SERVER, onLoginStateChange, handlePageChange, hashPassword }) => {
   const SALT = "tjM6O3MeXFEHUPOj";
   const emailInputRef = useRef<HTMLIonInputElement>(null);
   const passwordInputRef = useRef<HTMLIonInputElement>(null);
@@ -28,37 +29,27 @@ const LoginForm: React.FC<LoginFormProps> = ({ SERVER, onLoginStateChange, handl
   const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
 
-  const history = useHistory();
-
   const validateForm = () => {
+    const email = String(emailInputRef.current!.value).trim();
+    const password = String(passwordInputRef.current!.value).trim();
+
     let isValid = true;
-    const email = String(emailInputRef.current?.value ?? "").trim();
-    const password = String(passwordInputRef.current?.value ?? "").trim();
 
     if (!email || !/\S+@\S+\.\S+/.test(email)) {
-      setEmailError("Nieprawidłowy email");
+      setEmailError("Proszę podać prawidłowy adres e-mail.");
       isValid = false;
     } else {
       setEmailError(null);
     }
 
     if (!password || password.length < 6) {
-      setPasswordError("Hasło musi mieć co najmniej 6 znaków");
+      setPasswordError("Hasło musi mieć co najmniej 6 znaków.");
       isValid = false;
     } else {
       setPasswordError(null);
     }
 
     return isValid;
-  };
-
-  const hashPassword = async (password: string, salt: string) => {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(password + salt);
-    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashHex = hashArray.map(byte => byte.toString(16).padStart(2, "0")).join("");
-    return hashHex;
   };
 
   const login = () => {
@@ -83,7 +74,6 @@ const LoginForm: React.FC<LoginFormProps> = ({ SERVER, onLoginStateChange, handl
     }
   };
   
-
   return (
     <IonApp>
       <IonContent className="login-background">

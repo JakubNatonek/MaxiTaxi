@@ -35,11 +35,19 @@ const Autentication: React.FC<AutenticationProps> = ({ SERVER, handleMainPageCha
         setCurrentPage(page);
     };
     
+    const hashPassword = async (password: string, salt: string) => {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(password + salt);
+        const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const hashHex = hashArray.map(byte => byte.toString(16).padStart(2, "0")).join("");
+        return hashHex;
+    };
 
     return (
         <IonApp>
-            {currentPage === "login" &&  <LoginForm SERVER={SERVER} onLoginStateChange={handleLoginStateChange} handlePageChange={handlePageChange}/>}
-            {currentPage === "register" && <RegisterForm SERVER={SERVER} onLoginStateChange={handleLoginStateChange} handlePageChange={handlePageChange}/>}
+            {currentPage === "login" &&  <LoginForm SERVER={SERVER} onLoginStateChange={handleLoginStateChange} handlePageChange={handlePageChange} hashPassword={hashPassword}/>}
+            {currentPage === "register" && <RegisterForm SERVER={SERVER} onLoginStateChange={handleLoginStateChange} handlePageChange={handlePageChange} hashPassword={hashPassword}/>}
         </IonApp>
     )
 }
