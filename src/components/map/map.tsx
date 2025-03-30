@@ -26,6 +26,11 @@ import "./map.css";
 
 import Sidebar from "../side_bar/Sidebar";
 
+const SERVER = import.meta.env.VITE_REACT_APP_API_URL || "";
+
+// console.log("SERVER:", import.meta.env.VITE_REACT_APP_API_URL);
+
+
 
 interface MapComponentProps {
   latitude?: number;

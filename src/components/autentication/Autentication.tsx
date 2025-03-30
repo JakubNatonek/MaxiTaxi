@@ -15,6 +15,12 @@ import {
 import LoginForm from "../login_form/LoginForm";
 import RegisterForm from "../register/RegisterForm";
 
+const SERVER = import.meta.env.VITE_REACT_APP_API_URL || "";
+const SALT = import.meta.env.VITE_REACT_APP_SALT || "";
+
+console.log("SERVER:", import.meta.env.VITE_REACT_APP_API_URL);
+console.log("SALT:", import.meta.env.VITE_REACT_APP_SALT);
+
 interface AutenticationProps {
     SERVER: string;
     handleMainPageChange: (page: string) => void;

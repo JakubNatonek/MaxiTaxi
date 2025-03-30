@@ -14,6 +14,8 @@ import {
 import { useHistory } from "react-router-dom";
 import "./LoginForm.css";
 
+const SALT = import.meta.env.VITE_REACT_APP_SALT || ""; //DO USUNIĘCIA
+
 interface LoginFormProps {
   SERVER: string;
   onLoginStateChange: (isLogin: boolean) => void;
@@ -22,7 +24,7 @@ interface LoginFormProps {
 }
 
 const LoginForm: React.FC<LoginFormProps> = ({ SERVER, onLoginStateChange, handlePageChange, hashPassword }) => {
-  const SALT = "tjM6O3MeXFEHUPOj";
+
   const emailInputRef = useRef<HTMLIonInputElement>(null);
   const passwordInputRef = useRef<HTMLIonInputElement>(null);
 

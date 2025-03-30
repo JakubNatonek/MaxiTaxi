@@ -14,7 +14,7 @@ import {
 import { useHistory } from "react-router-dom";
 import "./RegisterForm.css";
 
-
+const SALT = import.meta.env.VITE_REACT_APP_SALT || ""; //DO USUNIĘCIA
 
 interface RegisterFormProps {
   SERVER: string;
@@ -32,7 +32,6 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ SERVER, onLoginStateChange,
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [confirmPasswordError, setConfirmPasswordError] = useState<string | null >(null);
 
-  const SALT = "tjM6O3MeXFEHUPOj"
 
   const handleRegister = async () => {
     if (validateForm()) {
