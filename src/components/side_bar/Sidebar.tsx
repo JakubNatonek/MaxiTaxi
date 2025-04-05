@@ -48,7 +48,8 @@ const Sidebar: React.FC<SidebarProps> = ({handlePageChange, contentId}) => {
     };
   
     const handleLogout = () => {
-    
+      localStorage.removeItem("jwt"); // Usuń token JWT
+      //handlePageChange("login"); DO IMPLEMENTACJI
     };
 
  return (

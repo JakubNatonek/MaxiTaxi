@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   IonApp,
   IonButton,
@@ -37,6 +37,14 @@ const Autentication: React.FC<AutenticationProps> = ({
 }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentPage, setCurrentPage] = useState("login");
+
+  useEffect(() => {
+    const token = localStorage.getItem("jwt");
+    if (token) {
+      setIsLoggedIn(true);
+      handleMainPageChange("MainView");
+    }
+  }, []);
 
   const handleLoginStateChange = async (loggedIn: boolean) => {
     await setIsLoggedIn(loggedIn);

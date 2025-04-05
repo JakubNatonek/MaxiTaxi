@@ -59,10 +59,13 @@ const LoginForm: React.FC<LoginFormProps> = ({ SERVER, onLoginStateChange, handl
     if (validateForm()) {
       const email = String(emailInputRef.current?.value ?? "").trim();
       const password = await hashPassword(String(passwordInputRef.current?.value ?? "").trim(), SALT);
-      const response = await sendEncryptedData("login", { user: email, password });
-      if(response.ok) {
-        // wykonano pomyślnie
+  
+      try {
+        const result = await sendEncryptedData("login", { user: email, password });
+        localStorage.setItem("jwt", result.token); // Przechowaj token JWT
         onLoginStateChange(true);
+      } catch (error) {
+        console.error("Login failed:", error);
       }
     }
   };

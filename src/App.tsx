@@ -26,7 +26,6 @@ const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState("Autentication"); 
   const SERVER = import.meta.env.VITE_REACT_APP_API_URL || "";
   const SALT = import.meta.env.VITE_REACT_APP_SALT || "";
-
   const handlePageChange = (page: string) => {
     setCurrentPage(page);
   };
@@ -34,7 +33,8 @@ const App: React.FC = () => {
   async function generateKey(): Promise<CryptoKey> {
     return crypto.subtle.importKey(
       "raw",
-      new TextEncoder().encode("my_secret_key_16"), // 16 bajtów
+      
+      new TextEncoder().encode(import.meta.env.VITE_REACT_APP_SECRET_KEY), // 16 bajtów
       { name: "AES-CBC" },
       false,
       ["encrypt", "decrypt"]
@@ -55,24 +55,27 @@ const App: React.FC = () => {
   async function sendEncryptedData(endpoint: string, data: Record<string, unknown>): Promise<any> {
     try {
       const encryptedPayload = await encryptData(data);
+      const token = localStorage.getItem("jwt"); // Pobierz token z localStorage
   
       const response = await fetch(`${SERVER}/${endpoint}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token ? `Bearer ${token}` : "", 
+        },
         body: JSON.stringify(encryptedPayload),
       });
   
-      // Zakładając, że odpowiedź jest w formacie JSON
-      const result = await response.json();
-      
       if (!response.ok) {
-        throw new Error(result.message || 'Wystąpił błąd');
+        const errorResult = await response.json();
+        throw new Error(errorResult.message || "Wystąpił błąd");
       }
   
-      return response; // Zwróć wynik odpowiedzi
+      const result = await response.json();
+      return result; 
     } catch (error) {
-      console.error('Błąd przy wysyłaniu danych:', error);
-      throw error; // Rzucenie błędem, aby wywołujący mógł obsłużyć
+      console.error("Błąd przy wysyłaniu danych:", error);
+      throw error; 
     }
   }
   
