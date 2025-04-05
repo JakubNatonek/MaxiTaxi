@@ -21,9 +21,10 @@ interface LoginFormProps {
   onLoginStateChange: (isLogin: boolean) => void;
   handlePageChange: (page: string) => void;
   hashPassword: (password: string, salt: string) => Promise<string>;
+  sendEncryptedData:  (endpoint: string, data: Record<string, unknown>) => Promise<any>;
 }
 
-const LoginForm: React.FC<LoginFormProps> = ({ SERVER, onLoginStateChange, handlePageChange, hashPassword }) => {
+const LoginForm: React.FC<LoginFormProps> = ({ SERVER, onLoginStateChange, handlePageChange, hashPassword, sendEncryptedData }) => {
 
   const emailInputRef = useRef<HTMLIonInputElement>(null);
   const passwordInputRef = useRef<HTMLIonInputElement>(null);
@@ -54,28 +55,18 @@ const LoginForm: React.FC<LoginFormProps> = ({ SERVER, onLoginStateChange, handl
     return isValid;
   };
 
-  const login = () => {
+  const handle_login = async () => {
     if (validateForm()) {
-      const email = String(emailInputRef.current!.value).trim();
-      const passwordRaw = String(passwordInputRef.current!.value).trim();
-
-      hashPassword(passwordRaw, SALT)
-        .then((hashedPassword) => {
-          const validEmail = "kamil@gmail.com";
-          const validPassword = "123456";
-  
-          return hashPassword(validPassword, SALT)
-            .then((validHashedPassword) => {
-              if (email === validEmail && hashedPassword === validHashedPassword) {
-                onLoginStateChange(true);
-              } else {
-                alert("Nieprawidłowe dane logowania");
-              }
-            });
-        });
+      const email = String(emailInputRef.current?.value ?? "").trim();
+      const password = await hashPassword(String(passwordInputRef.current?.value ?? "").trim(), SALT);
+      const response = await sendEncryptedData("login", { user: email, password });
+      if(response.ok) {
+        // wykonano pomyślnie
+        onLoginStateChange(true);
+      }
     }
   };
-  
+
   return (
     <IonApp>
       <IonContent className="login-background">
@@ -120,7 +111,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ SERVER, onLoginStateChange, handl
 
           <IonRow>
             <IonCol>
-              <IonButton expand="block" className="login-button" onClick={login}>
+              <IonButton expand="block" className="login-button" onClick={handle_login}>
                 ZALOGUJ
               </IonButton>
             </IonCol>

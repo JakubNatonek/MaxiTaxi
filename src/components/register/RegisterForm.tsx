@@ -21,9 +21,10 @@ interface RegisterFormProps {
   onLoginStateChange: (isLogin: boolean) => void;
   handlePageChange: (page: string) => void;
   hashPassword: (password: string, salt: string) => Promise<string>;
+  sendEncryptedData:  (endpoint: string, data: Record<string, unknown>) => Promise<any>;
 }
 
-const RegisterForm: React.FC<RegisterFormProps> = ({ SERVER, onLoginStateChange, handlePageChange, hashPassword}) => {
+const RegisterForm: React.FC<RegisterFormProps> = ({ SERVER, onLoginStateChange, handlePageChange, hashPassword, sendEncryptedData}) => {
   const emailInputRef = useRef<HTMLIonInputElement>(null);
   const passwordInputRef = useRef<HTMLIonInputElement>(null);
   const confirmPasswordInputRef = useRef<HTMLIonInputElement>(null);
@@ -33,11 +34,15 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ SERVER, onLoginStateChange,
   const [confirmPasswordError, setConfirmPasswordError] = useState<string | null >(null);
 
 
-  const handleRegister = async () => {
+  const handle_register = async () => {
     if (validateForm()) {
       const email = String(emailInputRef.current?.value ?? "").trim();
       const password = await hashPassword(String(passwordInputRef.current?.value ?? "").trim(), SALT);
-      await sendEncryptedData("register", { user: email, password });
+      const response = await sendEncryptedData("register", { user: email, password });
+      if(response.ok) {
+        // wykonano pomyślnie
+        onLoginStateChange(true);
+      }
     }
   };
 
@@ -76,36 +81,6 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ SERVER, onLoginStateChange,
     return isValid;
   };
 
-  async function generateKey(): Promise<CryptoKey> {
-    return crypto.subtle.importKey(
-      "raw",
-      new TextEncoder().encode("my_secret_key_16"), // 16 bajtów
-      { name: "AES-CBC" },
-      false,
-      ["encrypt", "decrypt"]
-    );
-  }
-  
-  async function encryptData(data: Record<string, unknown>): Promise<{ iv: number[]; data: number[] }> {
-    const key = await generateKey();
-    const iv = crypto.getRandomValues(new Uint8Array(16));
-    const encrypted = await crypto.subtle.encrypt(
-      { name: "AES-CBC", iv },
-      key,
-      new TextEncoder().encode(JSON.stringify(data))
-    );
-    return { iv: Array.from(iv), data: Array.from(new Uint8Array(encrypted)) };
-  }
-  
-  async function sendEncryptedData(endpoint: string, data: Record<string, unknown>): Promise<void> {
-    const encryptedPayload = await encryptData(data);
-    await fetch(`${SERVER}/${endpoint}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(encryptedPayload),
-    });
-  }
-    
   return (
     <IonApp>
       <IonContent className="register-background">
@@ -152,7 +127,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ SERVER, onLoginStateChange,
 
           <IonRow>
             <IonCol>
-              <IonButton expand="block" className="register-button" onClick={handleRegister}>
+              <IonButton expand="block" className="register-button" onClick={handle_register}>
                 ZAREJESTRUJ
               </IonButton>
             </IonCol>
