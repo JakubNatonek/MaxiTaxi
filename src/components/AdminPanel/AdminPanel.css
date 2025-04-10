@@ -6,9 +6,9 @@
   }
   
   .table-container {
-    overflow-x: auto;
+    overflow-x: auto; 
     margin: 0 auto;
-    max-width: 90%;
+    max-width: 100%; 
   }
   
   .styled-table {
@@ -31,6 +31,7 @@
   .styled-table th,
   .styled-table td {
     padding: 12px 15px;
+    text-align: center; 
   }
   
   .styled-table tbody tr {
@@ -49,4 +50,55 @@
     background-color: var(--ion-color-custom-orange-tint);
     color: var(--ion-color-custom-orange-contrast);
     cursor: pointer;
+  }
+  
+  button {
+    padding: 8px 12px;
+    background-color: var(--ion-color-custom-orange);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    outline: none; 
+  }
+  
+  button:hover {
+    background-color: var(--ion-color-custom-orange-tint);
+  }
+
+  button:focus,
+button:active {
+  background-color: var(--ion-color-custom-orange); 
+  outline: none; 
+}
+
+  select {
+    padding: 6px 10px;
+    border: 1px solid var(--ion-color-custom-grey-tint);
+    border-radius: 4px;
+    font-size: 0.9rem;
+  }
+  
+
+  @media (max-width: 768px) {
+    .admin-panel-title {
+      font-size: 1.5rem;
+    }
+  
+    .styled-table th,
+    .styled-table td {
+      font-size: 0.9rem;
+      padding: 8px 10px;
+    }
+  
+    button {
+      font-size: 0.8rem;
+      padding: 6px 10px;
+    }
+  
+    select {
+      font-size: 0.8rem;
+      padding: 5px 8px;
+    }
   }

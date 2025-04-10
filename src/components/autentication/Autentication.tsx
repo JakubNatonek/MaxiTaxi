@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   IonApp,
   IonButton,
@@ -17,9 +17,6 @@ import RegisterForm from "../register/RegisterForm";
 
 const SERVER = import.meta.env.VITE_REACT_APP_API_URL || "";
 const SALT = import.meta.env.VITE_REACT_APP_SALT || "";
-
-// console.log("SERVER:", import.meta.env.VITE_REACT_APP_API_URL);
-// console.log("SALT:", import.meta.env.VITE_REACT_APP_SALT);
 
 interface AutenticationProps {
   SERVER: string;
@@ -40,11 +37,49 @@ const Autentication: React.FC<AutenticationProps> = ({
 
   useEffect(() => {
     const token = localStorage.getItem("jwt");
+
     if (token) {
-      setIsLoggedIn(true);
-      handleMainPageChange("MainView");
+      const tokenPayload = JSON.parse(atob(token.split(".")[1])); // Dekodowanie payloadu JWT
+      const tokenExpiration = tokenPayload.exp * 1000; // Czas wygaśnięcia w ms
+      const currentTime = Date.now();
+
+      if (currentTime >= tokenExpiration) {
+        // Token wygasł
+        handleLogout();
+      } else {
+        setIsLoggedIn(true);
+        handleMainPageChange("MainView");
+
+        // Ustaw timer na automatyczne wylogowanie
+        const timeout = tokenExpiration - currentTime;
+
+        // Wypisywanie czasu do wylogowania co sekundę
+        const interval = setInterval(() => {
+          const remainingTime = Math.max(0, Math.floor((tokenExpiration - Date.now()) / 1000));
+          console.log(`Pozostało ${remainingTime} sekund do wylogowania.`);
+          if (remainingTime <= 0) {
+            clearInterval(interval);
+          }
+        }, 1000);
+
+        const logoutTimer = setTimeout(() => {
+          handleLogout();
+          clearInterval(interval); // Zatrzymanie interwału po wylogowaniu
+        }, timeout);
+
+        return () => {
+          clearTimeout(logoutTimer);
+          clearInterval(interval);
+        };
+      }
     }
-  }, []);
+  }, [handleMainPageChange]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("jwt");
+    setIsLoggedIn(false);
+    setCurrentPage("login");
+  };
 
   const handleLoginStateChange = async (loggedIn: boolean) => {
     await setIsLoggedIn(loggedIn);
