@@ -7,11 +7,11 @@ import {
   IonContent,
   IonButtons,
   IonMenuButton,
-  IonTable,
   IonRow,
   IonCol,
   IonGrid,
 } from "@ionic/react";
+import "./AdminPanel.css"; // Import stylów
 
 interface User {
   email: string;
@@ -61,27 +61,29 @@ const AdminPanel: React.FC = () => {
         <IonGrid>
           <IonRow>
             <IonCol>
-              <h2>Lista użytkowników</h2>
+              <h2 className="admin-panel-title">Lista użytkowników</h2>
             </IonCol>
           </IonRow>
           <IonRow>
             <IonCol>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Email</th>
-                    <th>Typ użytkownika</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map((user, index) => (
-                    <tr key={index}>
-                      <td>{user.email}</td>
-                      <td>{user.typ_uzytkownika}</td>
+              <div className="table-container">
+                <table className="styled-table">
+                  <thead>
+                    <tr>
+                      <th>Email</th>
+                      <th>Typ użytkownika</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {users.map((user, index) => (
+                      <tr key={index}>
+                        <td>{user.email}</td>
+                        <td>{user.typ_uzytkownika}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </IonCol>
           </IonRow>
         </IonGrid>
