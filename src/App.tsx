@@ -18,7 +18,17 @@ import "@ionic/react/css/palettes/dark.system.css";
 
 import Autentication from "./components/autentication/Autentication";
 import MainView from "./components/main_view/MainView";
+import { jwtDecode } from "jwt-decode";
 
+declare module "jwt-decode" {
+  export default function jwtDecode<T>(token: string): T;
+}
+
+interface JwtPayload {
+  userType: string; // Rola użytkownika
+  email: string;    // Adres e-mail użytkownika
+  exp: number;      // Czas wygaśnięcia tokena (opcjonalnie)
+}
 
 setupIonicReact();
 
@@ -29,6 +39,15 @@ const App: React.FC = () => {
   const handlePageChange = (page: string) => {
     setCurrentPage(page);
   };
+
+  const token = localStorage.getItem("jwt");
+  let userRole = null; // Inicjalizuj zmienną roli użytkownika jako null
+  if (token) {
+    const decoded = jwtDecode<JwtPayload>(token); // Użyj własnego typu JwtPayload
+    const userRole = decoded.userType; // Pobierz rolę użytkownika
+    localStorage.setItem("role", userRole); // Zapisz rolę w localStorage
+  }
+  
 
   async function generateKey(): Promise<CryptoKey> {
     return crypto.subtle.importKey(
@@ -87,7 +106,7 @@ const App: React.FC = () => {
           {currentPage === "Autentication" && (
             <Autentication SERVER={SERVER} handleMainPageChange={handlePageChange} sendEncryptedData={sendEncryptedData} />
           )}
-          {currentPage === "MainView" && <MainView sendEncryptedData={sendEncryptedData} />}
+          {currentPage === "MainView" && <MainView sendEncryptedData={sendEncryptedData}/>}
         </IonContent>
       </IonPage>
 

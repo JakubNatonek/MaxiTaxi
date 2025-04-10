@@ -26,6 +26,7 @@
     "@types/react-router-dom": "^5.3.3",
     "dotenv": "^16.4.7",
     "ionicons": "^7.0.0",
+    "jwt-decode": "^4.0.0",
     "leaflet": "^1.9.4",
     "package.json": "^2.0.1",
     "polyline": "^0.2.0",

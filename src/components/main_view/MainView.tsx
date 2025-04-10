@@ -19,6 +19,7 @@ import RegisterForm from "../register/RegisterForm";
 import MapComponent from "../map/map";
 import Payments from "../payments/Payments";
 import Sidebar from "../side_bar/Sidebar";
+import AdminPanel from "../AdminPanel/AdminPanel";
 // import MapComponent2 from "../map/map2";
 
 interface MainViewProps {
@@ -27,6 +28,7 @@ interface MainViewProps {
 
 const MainView: React.FC<MainViewProps> = ({sendEncryptedData }) => {
   const [currentPage, setCurrentPage] = useState("map"); 
+  const role = "admin"; 
 
   const handlePageChange = (page: string) => {
     setCurrentPage(page);
@@ -39,6 +41,8 @@ const MainView: React.FC<MainViewProps> = ({sendEncryptedData }) => {
                 <IonPage id="main">
                     {currentPage === "map" && <MapComponent />}
                     {currentPage === "payments" && <Payments />}
+                    {currentPage === "AdminPanel" && role === "admin" && <AdminPanel />}
+
                 </IonPage>
             </IonSplitPane>
         </IonApp>
