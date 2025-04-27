@@ -30,6 +30,19 @@ interface MainViewProps {
 const MainView: React.FC<MainViewProps> = ({sendEncryptedData }) => {
   const [currentPage, setCurrentPage] = useState("map"); 
 
+// Funkcja hashująca hasło DO POPRAWY NAJPRAWDOPODOBNIEJ MOŻNA USUNĄĆ Z AUTENTICATION
+  const hashPassword = async (password: string, salt: string) => {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(password + salt);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray
+      .map((byte) => byte.toString(16).padStart(2, "0"))
+      .join("");
+    return hashHex;
+  };
+
+
   const handlePageChange = (page: string) => {
     setCurrentPage(page);
   };
@@ -41,7 +54,7 @@ const MainView: React.FC<MainViewProps> = ({sendEncryptedData }) => {
                 <IonPage id="main">
                     {currentPage === "map" && <MapComponent />}
                     {currentPage === "payments" && <Payments />}
-                    {currentPage === "AdminPanel" && <AdminPanel />}
+                    {currentPage === "AdminPanel" && (<AdminPanel sendEncryptedData={sendEncryptedData} hashPassword={hashPassword} />)}
                     {currentPage === "driverOrders" && <DriverOrders />}
                 </IonPage>
             </IonSplitPane>
