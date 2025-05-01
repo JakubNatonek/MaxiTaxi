@@ -19,6 +19,17 @@
     text-align: center;
   }
   
+  ion-searchbar.custom-searchbar {
+    --color: #ffffff; /* kolor tekstu */
+    --placeholder-color: #ffffff; /* kolor tekstu placeholdera */
+    --icon-color: #ffffff; /* kolor ikon (np. lupa) */
+  }
+  
+  .custom-modal ion-item {
+    margin-bottom: 4px;
+    padding: 8px 0;
+  }
+  
   /* === PRZYCISK WYSZUKAJ === */
   ion-button {
     --background: #1c1c1c;

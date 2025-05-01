@@ -29,8 +29,12 @@ interface User {
 }
 
 interface AdminPanelProps {
-  sendEncryptedData: (endpoint: string, data: Record<string, unknown>) => Promise<any>;
+  sendEncryptedData: (
+    endpoint: string,
+    data: Record<string, unknown>
+  ) => Promise<any>;
   hashPassword: (password: string, salt: string) => Promise<string>;
+  getEncryptedData: (endpoint: string) => Promise<any>;
 }
 
 const roles = ["admin", "kierowca", "pasazer"];
@@ -42,7 +46,11 @@ const emptyUser: User = {
   typ_uzytkownika: "pasazer",
 };
 
-const AdminPanel: React.FC<AdminPanelProps> = ({ sendEncryptedData, hashPassword }) => {
+const AdminPanel: React.FC<AdminPanelProps> = ({
+  sendEncryptedData,
+  hashPassword,
+  getEncryptedData,
+}) => {
   const [users, setUsers] = useState<User[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -56,12 +64,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ sendEncryptedData, hashPassword
 
   // NEW: Edit validation state
   const [editError, setEditError] = useState<string | null>(null);
-
+  const SERVER = import.meta.env.VITE_REACT_APP_API_URL || "";
   // Pobieranie użytkowników z API
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem("jwt");
-      const response = await fetch("http://localhost:8080/users", {
+      const response = await fetch(SERVER + "/users", {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) throw new Error("Błąd podczas pobierania użytkowników");
@@ -246,7 +254,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ sendEncryptedData, hashPassword
         <IonGrid>
           <IonRow>
             <IonCol size="12">
-              <h2 className="admin-panel-title">Panel zarządzania użytkownikami</h2>
+              <h2 className="admin-panel-title">
+                Panel zarządzania użytkownikami
+              </h2>
             </IonCol>
           </IonRow>
           <IonRow>
@@ -280,7 +290,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ sendEncryptedData, hashPassword
                         <td>{user.telefon}</td>
                         <td>{user.typ_uzytkownika}</td>
                         <td>
-                          <IonButton size="small" onClick={() => handleEdit(user)}>
+                          <IonButton
+                            size="small"
+                            onClick={() => handleEdit(user)}
+                          >
                             Edytuj
                           </IonButton>
                         </td>
@@ -301,7 +314,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ sendEncryptedData, hashPassword
         </IonGrid>
 
         {/* Edit Modal */}
-        <IonModal isOpen={showEditModal} onDidDismiss={() => setShowEditModal(false)}>
+        <IonModal
+          isOpen={showEditModal}
+          onDidDismiss={() => setShowEditModal(false)}
+        >
           <IonContent>
             <IonGrid>
               <IonRow>
@@ -315,21 +331,33 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ sendEncryptedData, hashPassword
                     <IonLabel position="stacked">Imię</IonLabel>
                     <IonInput
                       value={editUser?.imie}
-                      onIonInput={(e) => handleEditChange("imie", ((e.target as unknown) as HTMLInputElement).value)}
+                      onIonInput={(e) =>
+                        handleEditChange(
+                          "imie",
+                          (e.target as unknown as HTMLInputElement).value
+                        )
+                      }
                     />
                   </IonItem>
                   <IonItem>
                     <IonLabel position="stacked">Telefon</IonLabel>
                     <IonInput
                       value={editUser?.telefon}
-                      onIonInput={(e) => handleEditChange("telefon", String((e.target as HTMLIonInputElement).value))}
+                      onIonInput={(e) =>
+                        handleEditChange(
+                          "telefon",
+                          String((e.target as HTMLIonInputElement).value)
+                        )
+                      }
                     />
                   </IonItem>
                   <IonItem>
                     <IonLabel position="stacked">Typ użytkownika</IonLabel>
                     <select
                       value={editUser?.typ_uzytkownika}
-                      onChange={(e) => handleEditChange("typ_uzytkownika", e.target.value)}
+                      onChange={(e) =>
+                        handleEditChange("typ_uzytkownika", e.target.value)
+                      }
                     >
                       {roles.map((role) => (
                         <option key={role} value={role}>
@@ -350,14 +378,22 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ sendEncryptedData, hashPassword
                       </IonButton>
                     </IonCol>
                     <IonCol>
-                      <IonButton expand="block" color="danger" onClick={handleDelete}>
+                      <IonButton
+                        expand="block"
+                        color="danger"
+                        onClick={handleDelete}
+                      >
                         Usuń użytkownika
                       </IonButton>
                     </IonCol>
                   </IonRow>
                   <IonRow>
                     <IonCol>
-                      <IonButton expand="block" fill="clear" onClick={() => setShowEditModal(false)}>
+                      <IonButton
+                        expand="block"
+                        fill="clear"
+                        onClick={() => setShowEditModal(false)}
+                      >
                         Anuluj
                       </IonButton>
                     </IonCol>
@@ -369,7 +405,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ sendEncryptedData, hashPassword
         </IonModal>
 
         {/* Add Modal */}
-        <IonModal isOpen={showAddModal} onDidDismiss={() => setShowAddModal(false)}>
+        <IonModal
+          isOpen={showAddModal}
+          onDidDismiss={() => setShowAddModal(false)}
+        >
           <IonContent>
             <IonGrid>
               <IonRow>
@@ -379,28 +418,36 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ sendEncryptedData, hashPassword
                     <IonLabel position="stacked">Email</IonLabel>
                     <IonInput
                       value={addUser.email}
-                      onIonChange={(e) => handleAddChange("email", e.detail.value!)}
+                      onIonChange={(e) =>
+                        handleAddChange("email", e.detail.value!)
+                      }
                     />
                   </IonItem>
                   <IonItem>
                     <IonLabel position="stacked">Imię</IonLabel>
                     <IonInput
                       value={addUser.imie}
-                      onIonChange={(e) => handleAddChange("imie", e.detail.value!)}
+                      onIonChange={(e) =>
+                        handleAddChange("imie", e.detail.value!)
+                      }
                     />
                   </IonItem>
                   <IonItem>
                     <IonLabel position="stacked">Telefon</IonLabel>
                     <IonInput
                       value={addUser.telefon}
-                      onIonChange={(e) => handleAddChange("telefon", e.detail.value!)}
+                      onIonChange={(e) =>
+                        handleAddChange("telefon", e.detail.value!)
+                      }
                     />
                   </IonItem>
                   <IonItem>
                     <IonLabel position="stacked">Typ użytkownika</IonLabel>
                     <select
                       value={addUser.typ_uzytkownika}
-                      onChange={(e) => handleAddChange("typ_uzytkownika", e.target.value)}
+                      onChange={(e) =>
+                        handleAddChange("typ_uzytkownika", e.target.value)
+                      }
                     >
                       {roles.map((role) => (
                         <option key={role} value={role}>
@@ -429,7 +476,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ sendEncryptedData, hashPassword
                       </IonButton>
                     </IonCol>
                     <IonCol>
-                      <IonButton expand="block" fill="clear" onClick={() => setShowAddModal(false)}>
+                      <IonButton
+                        expand="block"
+                        fill="clear"
+                        onClick={() => setShowAddModal(false)}
+                      >
                         Anuluj
                       </IonButton>
                     </IonCol>

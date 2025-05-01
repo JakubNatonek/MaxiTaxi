@@ -25,12 +25,16 @@ interface AutenticationProps {
     endpoint: string,
     data: Record<string, unknown>
   ) => Promise<any>;
+  getEncryptedData: (
+    endpoint: string
+  ) => Promise<any>;
 }
 
 const Autentication: React.FC<AutenticationProps> = ({
   SERVER,
   handleMainPageChange,
   sendEncryptedData,
+  getEncryptedData,
 }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentPage, setCurrentPage] = useState("login");
@@ -55,7 +59,10 @@ const Autentication: React.FC<AutenticationProps> = ({
 
         // Wypisywanie czasu do wylogowania co sekundę
         const interval = setInterval(() => {
-          const remainingTime = Math.max(0, Math.floor((tokenExpiration - Date.now()) / 1000));
+          const remainingTime = Math.max(
+            0,
+            Math.floor((tokenExpiration - Date.now()) / 1000)
+          );
           console.log(`Pozostało ${remainingTime} sekund do wylogowania.`);
           if (remainingTime <= 0) {
             clearInterval(interval);

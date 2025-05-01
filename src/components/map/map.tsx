@@ -22,21 +22,24 @@ import polyline from "polyline";
 
 import L from "leaflet";
 import "./map.css";
+import BookingMenu from "./BookingMenu";
 
 const SERVER = import.meta.env.VITE_REACT_APP_API_URL || "";
 
 // console.log("SERVER:", import.meta.env.VITE_REACT_APP_API_URL);
 
 interface MapComponentProps {
-  latitude?: number;
-  longitude?: number;
+  sendEncryptedData: (
+    endpoint: string,
+    data: Record<string, unknown>
+  ) => Promise<any>;
+  getEncryptedData: (endpoint: string) => Promise<any>;
 }
 
 const MapComponent2: React.FC<MapComponentProps> = ({
-  latitude,
-  longitude,
+  sendEncryptedData,
+  getEncryptedData,
 }) => {
-  
   const [userLocation, setUserLocation] = useState<{
     lat: number;
     lng: number;
@@ -59,11 +62,55 @@ const MapComponent2: React.FC<MapComponentProps> = ({
 
   const [route, setRoute] = useState<any[]>([]);
 
+  const [locationListVisible, setLocationListVisible] = useState(true);
+  const searchbarRef = useRef<HTMLIonSearchbarElement>(null);
+  const listRef = useRef<HTMLIonListElement>(null);
+  
+  const [showSearch, setShowSearch] = useState(true);
+  const [showBooking, setShowBooking] = useState(false);
+  const [alowBooking, setAlowBooking] = useState(false);
+  const [routeData, setRouteData] = useState<any>(null);
+
   useEffect(() => {
-    if (!latitude || !longitude) {
-      getUserLocation();
+    const handleClickOutside = (event: MouseEvent) => {
+      const searchbar = searchbarRef.current;
+      const list = listRef.current;
+      const target = event.target as Node;
+      // console.log("out");
+      if (
+        searchbar &&
+        !searchbar.contains(target) &&
+        list &&
+        !list.contains(target)
+      ) {
+        setLocationListVisible(false);
+      }
+    };
+
+    document.addEventListener("click", handleClickOutside, true);
+    return () => {
+      document.removeEventListener("click", handleClickOutside, true);
+    };
+  }, []);
+
+  useEffect(() => {
+    getUserLocation();
+  }, []);
+
+  useEffect(() => {
+    if (userLocation) {
+      sendLocalization();
     }
-  }, [latitude, longitude]);
+  }, [userLocation]);
+
+  const sendLocalization = async () => {
+    if (!userLocation) return;
+
+    const result = await sendEncryptedData("lokalizacja", {
+      szerokosc_geo: userLocation.lat,
+      dlugosc_geo: userLocation.lng,
+    });
+  };
 
   useEffect(() => {
     const debounceTimeout = setTimeout(() => {
@@ -118,6 +165,7 @@ const MapComponent2: React.FC<MapComponentProps> = ({
 
   const handleSelectedLocalization = (index: number) => {
     const selectedLocation = searchData[index];
+    // console.log(searchData[index]);
     setDestinationLocation({
       lat: parseFloat(selectedLocation.lat),
       lng: parseFloat(selectedLocation.lon),
@@ -136,13 +184,15 @@ const MapComponent2: React.FC<MapComponentProps> = ({
     try {
       const response = await fetch(url);
       const data = await response.json();
-      console.log(data);
-      // return data.routes[0].geometry.coordinates.map((coord: number[]) => [coord[1], coord[0]]);
-      const encodedPolyline = data.routes[0].geometry;
-
+      // console.log(data.routes[0].distance);
+      // console.log(data.routes[0].duration/60);
+      
+      setRouteData(data);
+      // console.log(data.routes[0].geometry)
       // Dekodowanie zakodowanego ciągu polyline
-      const decodedCoordinates = polyline.decode(encodedPolyline);
-
+      const decodedCoordinates = polyline.decode(data.routes[0].geometry);
+      // console.log(decodedCoordinates)
+      // console.log(encodedPolyline)
       // Zwracamy dane w formie [lat, lng], bo Leaflet oczekuje [lat, lng] dla polilinii
       return decodedCoordinates.map(
         (coord) => [coord[0], coord[1]] as [number, number]
@@ -155,10 +205,6 @@ const MapComponent2: React.FC<MapComponentProps> = ({
 
   // leaflet
   //polyline
-
-  useEffect(() => {
-    getUserLocation();
-  }, []);
 
   const mapRef = useRef<HTMLDivElement | null>(null); // Correct typing for mapRef
   const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
@@ -180,9 +226,14 @@ const MapComponent2: React.FC<MapComponentProps> = ({
   }, [userLocation, mapInstance]);
 
   const handleTrasGeneration = async () => {
+    // console.log("Trasa");
     const start = userLocation;
-    if (start && destinationLocation) {
-      const routeData = await fetchRoute(start, destinationLocation);
+    const end = destinationLocation;
+    if (start && end) {
+      setAlowBooking(false);
+      const routeData = await fetchRoute(start, end);
+      // console.log(calculateTotalDistance(routeData))
+      
       if (mapInstance) {
         // Usuwanie poprzednich warstw (jeśli istnieją)
         mapInstance.eachLayer((layer) => {
@@ -190,6 +241,12 @@ const MapComponent2: React.FC<MapComponentProps> = ({
             mapInstance.removeLayer(layer);
           }
         });
+        // usuwanie z markerami
+        // mapInstance.eachLayer((layer) => {
+        //   if (layer instanceof L.Polyline || layer instanceof L.Marker) {
+        //     mapInstance.removeLayer(layer);
+        //   }
+        // });
 
         // Dodanie nowej trasy
         if (routeData.length > 0) {
@@ -197,10 +254,40 @@ const MapComponent2: React.FC<MapComponentProps> = ({
             mapInstance
           );
           mapInstance.fitBounds(routePolyline.getBounds());
+          // setShowSearch(false);
+          setAlowBooking(true);
         }
       }
     }
   };
+  // Funkcja haversine do obliczania dystansu między dwoma punktami (w kilometrach)
+  function haversineDistance(coord1: [number, number], coord2: [number, number]): number {
+    const toRad = (deg: number): number => (deg * Math.PI) / 180;
+
+    const R = 6371; // promień Ziemi w km
+    const [lat1, lon1] = coord1;
+    const [lat2, lon2] = coord2;
+
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c;
+  }
+
+  // Oblicz całkowitą długość trasy
+  function calculateTotalDistance(coords: [number, number][]): number {
+    let total = 0;
+    for (let i = 1; i < coords.length; i++) {
+      total += haversineDistance(coords[i - 1], coords[i]);
+    }
+    return total;
+  }
 
   const [routeUrl, setRouteUrl] = useState<string>("");
   const generateRouteUrl = (
@@ -242,20 +329,30 @@ const MapComponent2: React.FC<MapComponentProps> = ({
         <IonContent fullscreen className="no-padding">
           <IonRow className="ion-padding">
             <IonCol>
-              <IonSearchbar debounce={500} onIonInput={handleInput} />
+              {showSearch && (
+                <IonSearchbar
+                  class="custom-searchbar"
+                  debounce={500}
+                  onIonInput={handleInput}
+                  ref={searchbarRef}
+                  onClick={() => setLocationListVisible(true)}
+                />
+              )}
             </IonCol>
           </IonRow>
           <IonRow>
             <IonCol className="ion-text-center">
-              <IonList className="search-list">
-                {searchData.map((result, index) => (
-                  <IonItem
-                    onClick={(event) => handleSelectedLocalization(index)}
-                    key={index}
-                  >
-                    {result.display_name}
-                  </IonItem>
-                ))}
+              <IonList className="search-list" ref={listRef}>
+                {locationListVisible &&
+                  showSearch &&
+                  searchData.map((result, index) => (
+                    <IonItem
+                      key={index}
+                      onClick={() => handleSelectedLocalization(index)}
+                    >
+                      {result.display_name}
+                    </IonItem>
+                  ))}
               </IonList>
               <div id="map">
                 <div
@@ -267,10 +364,37 @@ const MapComponent2: React.FC<MapComponentProps> = ({
               </div>
             </IonCol>
           </IonRow>
+
+          <IonButton
+            onClick={() => {
+              handleTrasGeneration();
+            }}
+            expand="full"
+            color="primary"
+          >
+            Wyznacz Trasę
+          </IonButton>
+          {alowBooking && (
+            <IonButton
+              onClick={() => {
+                console.log(showBooking);
+                setShowBooking(true);
+              }}
+              expand="full"
+              color="primary"
+            >
+              Zamów
+            </IonButton>
+          )}
           <IonRow>
-            <IonButtons onClick={handleTrasGeneration}>
-              Wyznacz Trase
-            </IonButtons>
+            <BookingMenu
+              size={0.7}
+              openIs={showBooking}
+              setShowBooking={setShowBooking}
+              sendEncryptedData={sendEncryptedData}
+              getEncryptedData={getEncryptedData}
+              routeData={routeData}
+            />
           </IonRow>
         </IonContent>
       </IonPage>

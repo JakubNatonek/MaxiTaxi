@@ -25,6 +25,7 @@ declare module "jwt-decode" {
 }
 
 interface JwtPayload {
+  id: number        // id
   userType: string; // Rola użytkownika
   email: string;    // Adres e-mail użytkownika
   exp: number;      // Czas wygaśnięcia tokena (opcjonalnie)
@@ -36,6 +37,7 @@ const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState("Autentication"); 
   const SERVER = import.meta.env.VITE_REACT_APP_API_URL || "";
   const SALT = import.meta.env.VITE_REACT_APP_SALT || "";
+  const KEY = import.meta.env.VITE_REACT_APP_SECRET_KEY || "";
   const handlePageChange = (page: string) => {
     setCurrentPage(page);
   };
@@ -52,8 +54,7 @@ const App: React.FC = () => {
   async function generateKey(): Promise<CryptoKey> {
     return crypto.subtle.importKey(
       "raw",
-      
-      new TextEncoder().encode(import.meta.env.VITE_REACT_APP_SECRET_KEY), // 16 bajtów
+      new TextEncoder().encode(KEY), // 16 bajtów
       { name: "AES-CBC" },
       false,
       ["encrypt", "decrypt"]
@@ -92,9 +93,56 @@ const App: React.FC = () => {
   
       const result = await response.json();
       return result; 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Błąd przy wysyłaniu danych:", error);
       throw error; 
+    }
+  }
+
+  async function decryptData(iv: number[], encryptedData: number[]): Promise<any> {
+    const ivBuffer = new Uint8Array(iv);
+    const encryptedBuffer = new Uint8Array(encryptedData);
+    const key = await generateKey();
+    const decrypted = await crypto.subtle.decrypt(
+      {
+        name: "AES-CBC",
+        iv: ivBuffer
+      },
+      key,
+      encryptedBuffer
+    );
+  
+    const decoder = new TextDecoder();
+    const decryptedText = decoder.decode(decrypted);
+    return JSON.parse(decryptedText);
+  }
+
+
+  async function getEncryptedData(endpoint: string): Promise<any> {
+    try {
+      const token = localStorage.getItem("jwt"); // Pobierz token z localStorage
+  
+      const response = await fetch(`${SERVER}/${endpoint}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token ? `Bearer ${token}` : "",
+        },
+      });
+  
+      if (!response.ok) {
+        const errorResult = await response.json();
+        throw new Error(errorResult.message || "Wystąpił błąd");
+      }
+  
+      const encryptedResponse = await response.json();
+      // console.log(encryptedResponse)
+      const decryptedData = await decryptData(encryptedResponse.iv, encryptedResponse.data);
+      // console.log(decryptedData);
+      return decryptedData;
+    } catch (error) {
+      console.error("Błąd przy pobieraniu danych:", error);
+      throw error;
     }
   }
   
@@ -104,9 +152,18 @@ const App: React.FC = () => {
       <IonPage>
         <IonContent>
           {currentPage === "Autentication" && (
-            <Autentication SERVER={SERVER} handleMainPageChange={handlePageChange} sendEncryptedData={sendEncryptedData} />
+            <Autentication 
+              SERVER={SERVER} 
+              handleMainPageChange={handlePageChange} 
+              sendEncryptedData={sendEncryptedData}
+              getEncryptedData={getEncryptedData}
+            />
           )}
-          {currentPage === "MainView" && <MainView sendEncryptedData={sendEncryptedData}/>}
+          {currentPage === "MainView" && 
+            <MainView 
+              sendEncryptedData={sendEncryptedData}
+              getEncryptedData={getEncryptedData}
+          />}
         </IonContent>
       </IonPage>
 

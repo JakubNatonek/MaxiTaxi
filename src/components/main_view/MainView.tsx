@@ -24,13 +24,22 @@ import DriverOrders from "../driverOrders/driverOrders";
 // import MapComponent2 from "../map/map2";
 
 interface MainViewProps {
-  sendEncryptedData:  (endpoint: string, data: Record<string, unknown>) => Promise<any>;
+  sendEncryptedData: (
+    endpoint: string,
+    data: Record<string, unknown>
+  ) => Promise<any>;
+  getEncryptedData: (
+    endpoint: string
+  ) => Promise<any>;
 }
 
-const MainView: React.FC<MainViewProps> = ({sendEncryptedData }) => {
-  const [currentPage, setCurrentPage] = useState("map"); 
+const MainView: React.FC<MainViewProps> = ({
+  sendEncryptedData,
+  getEncryptedData,
+}) => {
+  const [currentPage, setCurrentPage] = useState("map");
 
-// Funkcja hashująca hasło DO POPRAWY NAJPRAWDOPODOBNIEJ MOŻNA USUNĄĆ Z AUTENTICATION
+  // Funkcja hashująca hasło DO POPRAWY NAJPRAWDOPODOBNIEJ MOŻNA USUNĄĆ Z AUTENTICATION
   const hashPassword = async (password: string, salt: string) => {
     const encoder = new TextEncoder();
     const data = encoder.encode(password + salt);
@@ -42,24 +51,34 @@ const MainView: React.FC<MainViewProps> = ({sendEncryptedData }) => {
     return hashHex;
   };
 
-
   const handlePageChange = (page: string) => {
     setCurrentPage(page);
   };
 
-    return (
-        <IonApp>
-            <IonSplitPane when="md" contentId="main">
-                <Sidebar handlePageChange={handlePageChange} contentId="main"/>
-                <IonPage id="main">
-                    {currentPage === "map" && <MapComponent />}
-                    {currentPage === "payments" && <Payments />}
-                    {currentPage === "AdminPanel" && (<AdminPanel sendEncryptedData={sendEncryptedData} hashPassword={hashPassword} />)}
-                    {currentPage === "driverOrders" && <DriverOrders />}
-                </IonPage>
-            </IonSplitPane>
-        </IonApp>
-    )
-}
+  return (
+    <IonApp>
+      <IonSplitPane when="md" contentId="main">
+        <Sidebar handlePageChange={handlePageChange} contentId="main" />
+        <IonPage id="main">
+          {currentPage === "map" && (
+            <MapComponent 
+              sendEncryptedData={sendEncryptedData} 
+              getEncryptedData={getEncryptedData}
+            />
+          )}
+          {currentPage === "payments" && <Payments />}
+          {currentPage === "AdminPanel" && (
+            <AdminPanel
+              sendEncryptedData={sendEncryptedData}
+              hashPassword={hashPassword}
+              getEncryptedData={getEncryptedData}
+            />
+          )}
+          {currentPage === "driverOrders" && <DriverOrders />}
+        </IonPage>
+      </IonSplitPane>
+    </IonApp>
+  );
+};
 
 export default MainView;
