@@ -38,9 +38,19 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ handlePageChange, contentId }) => {
   const role = localStorage.getItem("role"); // Pobierz rolę użytkownika z localStorage
 
+const token = localStorage.getItem("jwt");
+let email = "";
+if (token) {
+  try {
+    email = JSON.parse(atob(token.split('.')[1])).email;
+  } catch { /* ignore */ }
+}
+
   const goToPayments = () => {
     handlePageChange("payments");
   };
+
+  const goToChatList = () => handlePageChange("ChatList");
 
   const goToMap = () => {
     handlePageChange("map");
@@ -59,10 +69,14 @@ const Sidebar: React.FC<SidebarProps> = ({ handlePageChange, contentId }) => {
         </IonToolbar>
       </IonHeader>
       <IonContent>
-        <div style={{ textAlign: "center", padding: "20px" }}>
-          <h3 style={{ margin: 0 }}>Jan Wiewiór</h3>
-          <p style={{ fontSize: "12px", color: "#555" }}>@gmail.com</p>
-        </div>
+      <div style={{ textAlign: "center", padding: "20px" }}>
+      <h3 style={{ margin: 0 }}>
+        {role ? role.charAt(0).toUpperCase() + role.slice(1) : "Użytkownik"}
+      </h3>
+      <p style={{ fontSize: "12px", color: "#555" }}>
+        {email || "brak@danych.pl"}
+      </p>
+</div>
         <IonList>
           <IonMenuToggle autoHide={false}>
             <IonItem button>
@@ -81,7 +95,7 @@ const Sidebar: React.FC<SidebarProps> = ({ handlePageChange, contentId }) => {
               <IonIcon icon={mapOutline} slot="start" />
               <IonLabel>Mapa</IonLabel>
             </IonItem>
-            <IonItem button>
+            <IonItem button onClick={goToChatList}>
               <IonIcon icon={peopleOutline} slot="start" />
               <IonLabel>Czaty</IonLabel>
             </IonItem>

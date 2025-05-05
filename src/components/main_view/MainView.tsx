@@ -21,6 +21,8 @@ import Payments from "../payments/Payments";
 import Sidebar from "../side_bar/Sidebar";
 import AdminPanel from "../AdminPanel/AdminPanel";
 import DriverOrders from "../driverOrders/driverOrders";
+import ChatList from "../chat/ChatList";
+import Chat from "../chat/Chats";
 // import MapComponent2 from "../map/map2";
 
 interface MainViewProps {
@@ -38,6 +40,7 @@ const MainView: React.FC<MainViewProps> = ({
   getEncryptedData,
 }) => {
   const [currentPage, setCurrentPage] = useState("map");
+  const [pageParams, setPageParams] = useState<{ rideId?: number } | null>(null);
 
   // Funkcja hashująca hasło DO POPRAWY NAJPRAWDOPODOBNIEJ MOŻNA USUNĄĆ Z AUTENTICATION
   const hashPassword = async (password: string, salt: string) => {
@@ -51,8 +54,9 @@ const MainView: React.FC<MainViewProps> = ({
     return hashHex;
   };
 
-  const handlePageChange = (page: string) => {
+  const handlePageChange = (page: string, params?: any) => {
     setCurrentPage(page);
+    setPageParams(params || null);
   };
 
   return (
@@ -72,6 +76,19 @@ const MainView: React.FC<MainViewProps> = ({
               sendEncryptedData={sendEncryptedData}
               hashPassword={hashPassword}
               getEncryptedData={getEncryptedData}
+            />
+          )}
+          {currentPage === "ChatList" && (
+            <ChatList
+              handlePageChange={handlePageChange}
+              getEncryptedData={getEncryptedData}
+            />
+          )}
+
+          {currentPage === "Chat" && pageParams?.rideId !== undefined && (
+            <Chat
+              rideId={pageParams.rideId}
+              sendEncryptedData={sendEncryptedData}
             />
           )}
           {currentPage === "driverOrders" && <DriverOrders />}

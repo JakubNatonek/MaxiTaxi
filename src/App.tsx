@@ -117,11 +117,9 @@ const App: React.FC = () => {
     return JSON.parse(decryptedText);
   }
 
-
   async function getEncryptedData(endpoint: string): Promise<any> {
     try {
-      const token = localStorage.getItem("jwt"); // Pobierz token z localStorage
-  
+      const token = localStorage.getItem("jwt");
       const response = await fetch(`${SERVER}/${endpoint}`, {
         method: "GET",
         headers: {
@@ -131,18 +129,25 @@ const App: React.FC = () => {
       });
   
       if (!response.ok) {
-        const errorResult = await response.json();
-        throw new Error(errorResult.message || "Wystąpił błąd");
+        let errJson = null;
+        try { errJson = await response.json(); } catch {}
+        throw new Error(errJson?.message || `Błąd ${response.status}`);
       }
   
-      const encryptedResponse = await response.json();
-      // console.log(encryptedResponse)
-      const decryptedData = await decryptData(encryptedResponse.iv, encryptedResponse.data);
-      // console.log(decryptedData);
-      return decryptedData;
-    } catch (error) {
-      console.error("Błąd przy pobieraniu danych:", error);
-      throw error;
+      const payload = await response.json();
+      
+      if (
+        payload &&
+        Array.isArray(payload.iv) &&
+        Array.isArray(payload.data)
+      ) {
+        return await decryptData(payload.iv, payload.data);
+      }
+  
+      return payload;
+    } catch (err) {
+      console.error("Błąd przy pobieraniu danych:", err);
+      throw err;
     }
   }
   
