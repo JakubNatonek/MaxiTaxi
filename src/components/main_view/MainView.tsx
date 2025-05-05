@@ -21,11 +21,15 @@ import Payments from "../payments/Payments";
 import Sidebar from "../side_bar/Sidebar";
 import AdminPanel from "../AdminPanel/AdminPanel";
 import DriverOrders from "../driverOrders/driverOrders";
+<<<<<<< HEAD
 import ChatList from "../chat/ChatList";
+=======
+>>>>>>> d3fea683916dbe31c7eca7359516308b5ea561ed
 import Chat from "../chat/Chats";
 // import MapComponent2 from "../map/map2";
 
 interface MainViewProps {
+<<<<<<< HEAD
   sendEncryptedData: (
     endpoint: string,
     data: Record<string, unknown>
@@ -99,3 +103,32 @@ const MainView: React.FC<MainViewProps> = ({
 };
 
 export default MainView;
+=======
+  sendEncryptedData:  (endpoint: string, data: Record<string, unknown>) => Promise<any>;
+}
+
+const MainView: React.FC<MainViewProps> = ({sendEncryptedData }) => {
+  const [currentPage, setCurrentPage] = useState("map"); 
+
+  const handlePageChange = (page: string) => {
+    setCurrentPage(page);
+  };
+
+    return (
+        <IonApp>
+            <IonSplitPane when="md" contentId="main">
+                <Sidebar handlePageChange={handlePageChange} contentId="main"/>
+                <IonPage id="main">
+                    {currentPage === "map" && <MapComponent />}
+                    {currentPage === "payments" && <Payments />}
+                    {currentPage === "AdminPanel" && <AdminPanel />}
+                    {currentPage === "driverOrders" && <DriverOrders />}
+                    {currentPage === "chat" && <Chat />}
+                </IonPage>
+            </IonSplitPane>
+        </IonApp>
+    )
+}
+
+export default MainView;
+>>>>>>> d3fea683916dbe31c7eca7359516308b5ea561ed

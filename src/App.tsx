@@ -15,7 +15,10 @@ import "@ionic/react/css/structure.css";
 import "@ionic/react/css/typography.css";
 import "@ionic/react/css/palettes/dark.system.css";
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> d3fea683916dbe31c7eca7359516308b5ea561ed
 import Autentication from "./components/autentication/Autentication";
 import MainView from "./components/main_view/MainView";
 import { jwtDecode } from "jwt-decode";
@@ -25,7 +28,10 @@ declare module "jwt-decode" {
 }
 
 interface JwtPayload {
+<<<<<<< HEAD
   id: number        // id
+=======
+>>>>>>> d3fea683916dbe31c7eca7359516308b5ea561ed
   userType: string; // Rola użytkownika
   email: string;    // Adres e-mail użytkownika
   exp: number;      // Czas wygaśnięcia tokena (opcjonalnie)
@@ -37,7 +43,10 @@ const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState("Autentication"); 
   const SERVER = import.meta.env.VITE_REACT_APP_API_URL || "";
   const SALT = import.meta.env.VITE_REACT_APP_SALT || "";
+<<<<<<< HEAD
   const KEY = import.meta.env.VITE_REACT_APP_SECRET_KEY || "";
+=======
+>>>>>>> d3fea683916dbe31c7eca7359516308b5ea561ed
   const handlePageChange = (page: string) => {
     setCurrentPage(page);
   };
@@ -50,11 +59,20 @@ const App: React.FC = () => {
     localStorage.setItem("role", userRole); // Zapisz rolę w localStorage
   }
   
+<<<<<<< HEAD
 
   async function generateKey(): Promise<CryptoKey> {
     return crypto.subtle.importKey(
       "raw",
       new TextEncoder().encode(KEY), // 16 bajtów
+=======
+  
+  async function generateKey(): Promise<CryptoKey> {
+    return crypto.subtle.importKey(
+      "raw",
+      
+      new TextEncoder().encode(import.meta.env.VITE_REACT_APP_SECRET_KEY), // 16 bajtów
+>>>>>>> d3fea683916dbe31c7eca7359516308b5ea561ed
       { name: "AES-CBC" },
       false,
       ["encrypt", "decrypt"]
@@ -93,11 +111,16 @@ const App: React.FC = () => {
   
       const result = await response.json();
       return result; 
+<<<<<<< HEAD
     } catch (error: any) {
+=======
+    } catch (error) {
+>>>>>>> d3fea683916dbe31c7eca7359516308b5ea561ed
       console.error("Błąd przy wysyłaniu danych:", error);
       throw error; 
     }
   }
+<<<<<<< HEAD
 
   async function decryptData(iv: number[], encryptedData: number[]): Promise<any> {
     const ivBuffer = new Uint8Array(iv);
@@ -150,6 +173,8 @@ const App: React.FC = () => {
       throw err;
     }
   }
+=======
+>>>>>>> d3fea683916dbe31c7eca7359516308b5ea561ed
   
 
   return (
@@ -157,6 +182,7 @@ const App: React.FC = () => {
       <IonPage>
         <IonContent>
           {currentPage === "Autentication" && (
+<<<<<<< HEAD
             <Autentication 
               SERVER={SERVER} 
               handleMainPageChange={handlePageChange} 
@@ -169,6 +195,11 @@ const App: React.FC = () => {
               sendEncryptedData={sendEncryptedData}
               getEncryptedData={getEncryptedData}
           />}
+=======
+            <Autentication SERVER={SERVER} handleMainPageChange={handlePageChange} sendEncryptedData={sendEncryptedData} />
+          )}
+          {currentPage === "MainView" && <MainView sendEncryptedData={sendEncryptedData}/>}
+>>>>>>> d3fea683916dbe31c7eca7359516308b5ea561ed
         </IonContent>
       </IonPage>
 
