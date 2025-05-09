@@ -20,7 +20,7 @@ import "leaflet/dist/leaflet.css";
 
 import polyline from "polyline";
 
-import L from "leaflet";
+import L, { map } from "leaflet";
 import "./map.css";
 import BookingMenu from "./BookingMenu";
 
@@ -37,21 +37,14 @@ interface MapComponentProps {
 }
 
 const MapComponent2: React.FC<MapComponentProps> = ({
-<<<<<<< HEAD
   sendEncryptedData,
   getEncryptedData,
 }) => {
-=======
-  latitude,
-  longitude,
-}) => {
-  
->>>>>>> d3fea683916dbe31c7eca7359516308b5ea561ed
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const [userLocation, setUserLocation] = useState<{
     lat: number;
     lng: number;
   } | null>(null);
-  const [searchQuery, setSearchQuery] = useState<string>("");
   const [mapLocation, setMapLocation] = useState<{
     lat: number;
     lng: number;
@@ -69,15 +62,19 @@ const MapComponent2: React.FC<MapComponentProps> = ({
 
   const [route, setRoute] = useState<any[]>([]);
 
-<<<<<<< HEAD
   const [locationListVisible, setLocationListVisible] = useState(true);
   const searchbarRef = useRef<HTMLIonSearchbarElement>(null);
   const listRef = useRef<HTMLIonListElement>(null);
-  
+
   const [showSearch, setShowSearch] = useState(true);
   const [showBooking, setShowBooking] = useState(false);
   const [alowBooking, setAlowBooking] = useState(false);
   const [routeData, setRouteData] = useState<any>(null);
+  const userMarkerRef = useRef<L.CircleMarker | null>(null);
+
+  
+  const mapRef = useRef<HTMLDivElement | null>(null); // Correct typing for mapRef
+  const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -106,34 +103,13 @@ const MapComponent2: React.FC<MapComponentProps> = ({
   }, []);
 
   useEffect(() => {
-    if (userLocation) {
-      sendLocalization();
-    }
-  }, [userLocation]);
-
-  const sendLocalization = async () => {
-    if (!userLocation) return;
-
-    const result = await sendEncryptedData("lokalizacja", {
-      szerokosc_geo: userLocation.lat,
-      dlugosc_geo: userLocation.lng,
-    });
-  };
-=======
-  useEffect(() => {
-    if (!latitude || !longitude) {
+    const interval = setInterval(() => {
       getUserLocation();
-    }
-  }, [latitude, longitude]);
->>>>>>> d3fea683916dbe31c7eca7359516308b5ea561ed
+      // console.log("cos");
+    }, 5000);
 
-  useEffect(() => {
-    const debounceTimeout = setTimeout(() => {
-      searchLocation();
-    }, 500); // Debounced for 500ms
-
-    return () => clearTimeout(debounceTimeout);
-  }, [searchQuery]);
+    return () => clearInterval(interval);
+  }, []);
 
   const getUserLocation = () => {
     if (navigator.geolocation) {
@@ -148,6 +124,22 @@ const MapComponent2: React.FC<MapComponentProps> = ({
       );
     }
   };
+
+  useEffect(() => {
+    setTimeout(() => {
+      if (mapInstance) {
+        mapInstance.invalidateSize();
+      }
+    }, 100);
+  }, [mapInstance]);
+
+  useEffect(() => {
+    const debounceTimeout = setTimeout(() => {
+      searchLocation();
+    }, 500); // Debounced for 500ms
+
+    return () => clearTimeout(debounceTimeout);
+  }, [searchQuery]);
 
   const searchLocation = async () => {
     if (searchQuery.trim()) {
@@ -167,109 +159,12 @@ const MapComponent2: React.FC<MapComponentProps> = ({
         setSearchData([]); // Clear results on error
       } finally {
         setLoading(false);
-<<<<<<< HEAD
-=======
       }
     } else {
       setSearchData([]); // Clear results if searchQuery is empty
     }
   };
 
-  const handleInput = (event: Event) => {
-    const target = event.target as HTMLIonSearchbarElement;
-    setSearchQuery(target.value || "");
-  };
-
-  const handleSelectedLocalization = (index: number) => {
-    const selectedLocation = searchData[index];
-    setDestinationLocation({
-      lat: parseFloat(selectedLocation.lat),
-      lng: parseFloat(selectedLocation.lon),
-    });
-    setMapLocation({
-      lat: parseFloat(selectedLocation.lat),
-      lng: parseFloat(selectedLocation.lon),
-    });
-  };
-
-  const fetchRoute = async (
-    start: { lat: number; lng: number },
-    end: { lat: number; lng: number }
-  ) => {
-    const url = `https://router.project-osrm.org/route/v1/driving/${start.lng},${start.lat};${end.lng},${end.lat}?overview=full&steps=true`;
-    try {
-      const response = await fetch(url);
-      const data = await response.json();
-      console.log(data);
-      // return data.routes[0].geometry.coordinates.map((coord: number[]) => [coord[1], coord[0]]);
-      const encodedPolyline = data.routes[0].geometry;
-
-      // Dekodowanie zakodowanego ciągu polyline
-      const decodedCoordinates = polyline.decode(encodedPolyline);
-
-      // Zwracamy dane w formie [lat, lng], bo Leaflet oczekuje [lat, lng] dla polilinii
-      return decodedCoordinates.map(
-        (coord) => [coord[0], coord[1]] as [number, number]
-      ); // Konwertowanie na typ [number, number]
-    } catch (error) {
-      console.error("Błąd podczas wyznaczania trasy:", error);
-      return [];
-    }
-  };
-
-  // leaflet
-  //polyline
-
-  useEffect(() => {
-    getUserLocation();
-  }, []);
-
-  const mapRef = useRef<HTMLDivElement | null>(null); // Correct typing for mapRef
-  const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
-
-  useEffect(() => {
-    if (mapRef.current && userLocation && !mapInstance) {
-      const map = L.map(mapRef.current).setView(
-        [userLocation.lat, userLocation.lng],
-        13
-      );
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: "© OpenStreetMap contributors",
-      }).addTo(map);
-      // Dodanie markera dla bieżącej lokalizacji
-      L.marker([userLocation.lat, userLocation.lng]).addTo(map);
-
-      setMapInstance(map);
-    }
-  }, [userLocation, mapInstance]);
-
-  const handleTrasGeneration = async () => {
-    const start = userLocation;
-    if (start && destinationLocation) {
-      const routeData = await fetchRoute(start, destinationLocation);
-      if (mapInstance) {
-        // Usuwanie poprzednich warstw (jeśli istnieją)
-        mapInstance.eachLayer((layer) => {
-          if (layer instanceof L.Polyline) {
-            mapInstance.removeLayer(layer);
-          }
-        });
-
-        // Dodanie nowej trasy
-        if (routeData.length > 0) {
-          const routePolyline = L.polyline(routeData, { color: "blue" }).addTo(
-            mapInstance
-          );
-          mapInstance.fitBounds(routePolyline.getBounds());
-        }
->>>>>>> d3fea683916dbe31c7eca7359516308b5ea561ed
-      }
-    } else {
-      setSearchData([]); // Clear results if searchQuery is empty
-    }
-  };
-
-<<<<<<< HEAD
   const handleInput = (event: Event) => {
     const target = event.target as HTMLIonSearchbarElement;
     setSearchQuery(target.value || "");
@@ -298,7 +193,7 @@ const MapComponent2: React.FC<MapComponentProps> = ({
       const data = await response.json();
       // console.log(data.routes[0].distance);
       // console.log(data.routes[0].duration/60);
-      
+
       setRouteData(data);
       // console.log(data.routes[0].geometry)
       // Dekodowanie zakodowanego ciągu polyline
@@ -318,8 +213,6 @@ const MapComponent2: React.FC<MapComponentProps> = ({
   // leaflet
   //polyline
 
-  const mapRef = useRef<HTMLDivElement | null>(null); // Correct typing for mapRef
-  const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
 
   useEffect(() => {
     if (mapRef.current && userLocation && !mapInstance) {
@@ -331,9 +224,29 @@ const MapComponent2: React.FC<MapComponentProps> = ({
         attribution: "© OpenStreetMap contributors",
       }).addTo(map);
       // Dodanie markera dla bieżącej lokalizacji
-      L.marker([userLocation.lat, userLocation.lng]).addTo(map);
 
       setMapInstance(map);
+    }
+  }, [userLocation, mapInstance]);
+
+  useEffect(() => {
+    if (mapInstance && userLocation) {
+      // Usuń poprzedni marker jeśli istnieje
+      if (userMarkerRef.current) {
+        mapInstance.removeLayer(userMarkerRef.current);
+      }
+
+      // Dodaj nowy marker
+      const marker = L.circleMarker([userLocation.lat, userLocation.lng], {
+        radius: 6,
+        color: "#00c8ff",
+        fillColor: "#dff5f5",
+        fillOpacity: 1,
+      })
+        .addTo(mapInstance)
+        .bindPopup("Twoja lokalizacja");
+
+      userMarkerRef.current = marker; // Zapisz referencję
     }
   }, [userLocation, mapInstance]);
 
@@ -345,7 +258,7 @@ const MapComponent2: React.FC<MapComponentProps> = ({
       setAlowBooking(false);
       const routeData = await fetchRoute(start, end);
       // console.log(calculateTotalDistance(routeData))
-      
+
       if (mapInstance) {
         // Usuwanie poprzednich warstw (jeśli istnieją)
         mapInstance.eachLayer((layer) => {
@@ -353,27 +266,21 @@ const MapComponent2: React.FC<MapComponentProps> = ({
             mapInstance.removeLayer(layer);
           }
         });
-        // usuwanie z markerami
-        // mapInstance.eachLayer((layer) => {
-        //   if (layer instanceof L.Polyline || layer instanceof L.Marker) {
-        //     mapInstance.removeLayer(layer);
-        //   }
-        // });
 
-        // Dodanie nowej trasy
-        if (routeData.length > 0) {
-          const routePolyline = L.polyline(routeData, { color: "blue" }).addTo(
-            mapInstance
-          );
-          mapInstance.fitBounds(routePolyline.getBounds());
-          // setShowSearch(false);
-          setAlowBooking(true);
-        }
+        const routePolyline = L.polyline(routeData, { color: "blue" }).addTo(
+          mapInstance
+        );
+        mapInstance.fitBounds(routePolyline.getBounds());
+        // setShowSearch(false);
+        setAlowBooking(true);
       }
     }
   };
   // Funkcja haversine do obliczania dystansu między dwoma punktami (w kilometrach)
-  function haversineDistance(coord1: [number, number], coord2: [number, number]): number {
+  function haversineDistance(
+    coord1: [number, number],
+    coord2: [number, number]
+  ): number {
     const toRad = (deg: number): number => (deg * Math.PI) / 180;
 
     const R = 6371; // promień Ziemi w km
@@ -410,17 +317,6 @@ const MapComponent2: React.FC<MapComponentProps> = ({
     return `https://www.openstreetmap.org/directions?engine=fossgis_osm_router&route=${start.lat},${start.lng};${end.lat},${end.lng}#map=14/${start.lat}/${start.lng}`;
   };
 
-=======
-  const [routeUrl, setRouteUrl] = useState<string>("");
-  const generateRouteUrl = (
-    start: { lat: number; lng: number },
-    end: { lat: number; lng: number }
-  ) => {
-    // Generowanie URL do wyznaczenia trasy w OpenStreetMap
-    return `https://www.openstreetmap.org/directions?engine=fossgis_osm_router&route=${start.lat},${start.lng};${end.lat},${end.lng}#map=14/${start.lat}/${start.lng}`;
-  };
-
->>>>>>> d3fea683916dbe31c7eca7359516308b5ea561ed
   const mapLatitude = mapLocation?.lat || (userLocation && userLocation.lat);
   const mapLongitude = mapLocation?.lng || (userLocation && userLocation.lng);
 
@@ -452,7 +348,6 @@ const MapComponent2: React.FC<MapComponentProps> = ({
         <IonContent fullscreen className="no-padding">
           <IonRow className="ion-padding">
             <IonCol>
-<<<<<<< HEAD
               {showSearch && (
                 <IonSearchbar
                   class="custom-searchbar"
@@ -462,14 +357,10 @@ const MapComponent2: React.FC<MapComponentProps> = ({
                   onClick={() => setLocationListVisible(true)}
                 />
               )}
-=======
-              <IonSearchbar debounce={500} onIonInput={handleInput} />
->>>>>>> d3fea683916dbe31c7eca7359516308b5ea561ed
             </IonCol>
           </IonRow>
           <IonRow>
             <IonCol className="ion-text-center">
-<<<<<<< HEAD
               <IonList className="search-list" ref={listRef}>
                 {locationListVisible &&
                   showSearch &&
@@ -481,17 +372,6 @@ const MapComponent2: React.FC<MapComponentProps> = ({
                       {result.display_name}
                     </IonItem>
                   ))}
-=======
-              <IonList className="search-list">
-                {searchData.map((result, index) => (
-                  <IonItem
-                    onClick={(event) => handleSelectedLocalization(index)}
-                    key={index}
-                  >
-                    {result.display_name}
-                  </IonItem>
-                ))}
->>>>>>> d3fea683916dbe31c7eca7359516308b5ea561ed
               </IonList>
               <div id="map">
                 <div
@@ -503,7 +383,6 @@ const MapComponent2: React.FC<MapComponentProps> = ({
               </div>
             </IonCol>
           </IonRow>
-<<<<<<< HEAD
 
           <IonButton
             onClick={() => {
@@ -535,12 +414,6 @@ const MapComponent2: React.FC<MapComponentProps> = ({
               getEncryptedData={getEncryptedData}
               routeData={routeData}
             />
-=======
-          <IonRow>
-            <IonButtons onClick={handleTrasGeneration}>
-              Wyznacz Trase
-            </IonButtons>
->>>>>>> d3fea683916dbe31c7eca7359516308b5ea561ed
           </IonRow>
         </IonContent>
       </IonPage>

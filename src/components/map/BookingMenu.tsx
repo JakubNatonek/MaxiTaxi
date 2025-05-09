@@ -39,7 +39,7 @@ const BookingMenu: React.FC<BookingMenuProps> = ({
   const modalRef = useRef<HTMLIonModalElement>(null);
 
   useEffect(() => {
-    console.log(routeData);
+    // console.log(routeData);
     const modalEl = modalRef.current;
 
     const handleBackdropTap = () => {
