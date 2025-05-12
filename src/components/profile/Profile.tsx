@@ -42,7 +42,7 @@ const Profile: React.FC = () => {
     fetchProfile();
   }, []);
 
-// Funkcja hashująca SHA-256
+// Funkcja hashująca znowu ponieważ nie działa ta zaimportowana z autentication
 const hashPassword = async (password: string, salt: string) => {
   const encoder = new TextEncoder();
   const data = encoder.encode(password + salt);
