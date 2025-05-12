@@ -305,7 +305,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
               <IonInput
                 placeholder="Wyszukaj użytkownika po e-mailu, imieniu lub telefonie"
                 value={search}
-                onIonChange={(e) => setSearch(e.detail.value!)}
+                onIonInput={(e) => setSearch(e.detail.value!)}
                 clearInput
               />
             </IonCol>
@@ -366,7 +366,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                   <h2>Edytuj użytkownika</h2>
                   <IonItem>
                     <IonLabel position="stacked">Email</IonLabel>
-                    <IonInput value={editUser?.email} disabled  />
+                    <IonInput value={editUser?.email} disabled />
                   </IonItem>
                   <IonItem>
                     <IonLabel position="stacked">Imię</IonLabel>
@@ -460,7 +460,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                     <IonLabel position="stacked">Email</IonLabel>
                     <IonInput
                       value={addUser.email}
-                      onIonChange={(e) =>
+                      onIonInput={(e) =>
                         handleAddChange("email", e.detail.value!)
                       }
                     />
@@ -469,7 +469,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                     <IonLabel position="stacked">Imię</IonLabel>
                     <IonInput
                       value={addUser.imie}
-                      onIonChange={(e) =>
+                      onIonInput={(e) =>
                         handleAddChange("imie", e.detail.value!)
                       }
                     />
@@ -478,7 +478,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                     <IonLabel position="stacked">Telefon</IonLabel>
                     <IonInput
                       value={addUser.telefon}
-                      onIonChange={(e) =>
+                      onIonInput={(e) =>
                         handleAddChange("telefon", e.detail.value!)
                       }
                     />
@@ -503,7 +503,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                     <IonInput
                       type="password"
                       value={addPassword}
-                      onIonChange={(e) => setAddPassword(e.detail.value!)}
+                      onIonInput={(e) => setAddPassword(e.detail.value!)}
                     />
                   </IonItem>
                   {addError && (

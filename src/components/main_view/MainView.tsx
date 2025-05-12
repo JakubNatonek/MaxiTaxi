@@ -24,6 +24,7 @@ import DriverOrders from "../driverOrders/driverOrders";
 import ChatList from "../chat/ChatList";
 import Chat from "../chat/Chats";
 import Rides from "../ride/rides";
+import Profile from "../profile/Profile";
 // import MapComponent2 from "../map/map2";
 
 interface MainViewProps {
@@ -159,6 +160,7 @@ const MainView: React.FC<MainViewProps> = ({
               getEncryptedData={getEncryptedData}
               orders={orders} // Przekazanie zamówień do komponentu
            />}
+            {currentPage === "profile" && <Profile />}
         </IonPage>
       </IonSplitPane>
     </IonApp>

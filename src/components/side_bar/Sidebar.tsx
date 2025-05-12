@@ -134,6 +134,10 @@ const roleId = Number(localStorage.getItem("roleId"));
             <IonIcon icon={informationCircleOutline} slot="start" />
             <IonLabel>O Nas</IonLabel>
           </IonItem>
+          <IonItem button onClick={() => handlePageChange("profile")}>
+            <IonIcon icon={personOutline} slot="start" />
+            <IonLabel>Profil</IonLabel>
+          </IonItem>
 
           {/* ZAMIANA: Sprawdzanie po roleId */}
           {roleId === 1 && (
