@@ -43,11 +43,13 @@ const App: React.FC = () => {
   };
 
   const token = localStorage.getItem("jwt");
-  let userRole = null; // Inicjalizuj zmienną roli użytkownika jako null
   if (token) {
-    const decoded = jwtDecode<JwtPayload>(token); // Użyj własnego typu JwtPayload
-    const userRole = decoded.userType; // Pobierz rolę użytkownika
-    localStorage.setItem("role", userRole); // Zapisz rolę w localStorage
+    try {
+      const decoded = jwtDecode<JwtPayload>(token);
+      localStorage.setItem("roleId", String(decoded.roleId));
+    } catch (e) {
+      localStorage.removeItem("roleId");
+    }
   }
   
 

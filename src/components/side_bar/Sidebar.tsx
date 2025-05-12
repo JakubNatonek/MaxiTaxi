@@ -39,7 +39,8 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ handlePageChange, contentId }) => {
-  const role = localStorage.getItem("role"); // Pobierz rolę użytkownika z localStorage
+
+const roleId = Number(localStorage.getItem("roleId"));
 
   const token = localStorage.getItem("jwt");
 
@@ -80,78 +81,85 @@ const Sidebar: React.FC<SidebarProps> = ({ handlePageChange, contentId }) => {
 
   const handleLogout = () => {
     localStorage.removeItem("jwt");
-    localStorage.removeItem("role");
+    localStorage.removeItem("roleId");;
     window.location.reload();
   };
 
+    // Mapowanie id roli na nazwę
+    const roleNames: Record<number, string> = {
+      1: "Admin",
+      2: "Pasażer",
+      3: "Kierowca"
+    };
 
   return (
     <IonMenu contentId={contentId}>
-      <IonHeader>
-        <IonToolbar color="custom-orange">
-          <IonTitle>Menu</IonTitle>
-        </IonToolbar>
-      </IonHeader>
-      <IonContent>
-      <div style={{ textAlign: "center", padding: "20px" }}>
-      <h3 style={{ margin: 0 }}>
-        {role ? role.charAt(0).toUpperCase() + role.slice(1) : "Użytkownik"}
-      </h3>
-      <p style={{ fontSize: "12px", color: "#555" }}>
-        {email || "brak@danych.pl"}
-      </p>
-      </div>
-        <IonList>
-          <IonMenuToggle autoHide={false}>
-            <IonItem button onClick={goToRides}>
-              <IonIcon icon={personOutline} slot="start" />
-              <IonLabel>Przejazdy</IonLabel>
-            </IonItem>
-            <IonItem button>
-              <IonIcon icon={walletOutline} slot="start" />
-              <IonLabel>Portfel</IonLabel>
-            </IonItem>
-            <IonItem button onClick={goToPayments}>
-              <IonIcon icon={cardOutline} slot="start" />
-              <IonLabel>Płatności</IonLabel>
-            </IonItem>
-            <IonItem button onClick={goToMap}>
-              <IonIcon icon={mapOutline} slot="start" />
-              <IonLabel>Mapa</IonLabel>
-            </IonItem>
-            <IonItem button onClick={goToChatList}>
+    <IonHeader>
+      <IonToolbar color="custom-orange">
+        <IonTitle>Menu</IonTitle>
+      </IonToolbar>
+    </IonHeader>
+    <IonContent>
+    <div style={{ textAlign: "center", padding: "20px" }}>
+    <h3 style={{ margin: 0 }}>
+      {roleNames[roleId] || "Użytkownik"}
+    </h3>
+    <p style={{ fontSize: "12px", color: "#555" }}>
+      {email || "brak@danych.pl"}
+    </p>
+    </div>
+      <IonList>
+        <IonMenuToggle autoHide={false}>
+          <IonItem button onClick={goToRides}>
+            <IonIcon icon={personOutline} slot="start" />
+            <IonLabel>Przejazdy</IonLabel>
+          </IonItem>
+          <IonItem button>
+            <IonIcon icon={walletOutline} slot="start" />
+            <IonLabel>Portfel</IonLabel>
+          </IonItem>
+          <IonItem button onClick={goToPayments}>
+            <IonIcon icon={cardOutline} slot="start" />
+            <IonLabel>Płatności</IonLabel>
+          </IonItem>
+          <IonItem button onClick={goToMap}>
+            <IonIcon icon={mapOutline} slot="start" />
+            <IonLabel>Mapa</IonLabel>
+          </IonItem>
+          <IonItem button onClick={goToChatList}>
+            <IonIcon icon={peopleOutline} slot="start" />
+            <IonLabel>Czaty</IonLabel>
+          </IonItem>
+          <IonItem button>
+            <IonIcon icon={informationCircleOutline} slot="start" />
+            <IonLabel>O Nas</IonLabel>
+          </IonItem>
+
+          {/* ZAMIANA: Sprawdzanie po roleId */}
+          {roleId === 1 && (
+            <IonItem button onClick={goToAdmin}>
               <IonIcon icon={peopleOutline} slot="start" />
-              <IonLabel>Czaty</IonLabel>
+              <IonLabel>Zarządzanie użytkownikami</IonLabel>
             </IonItem>
-            <IonItem button>
-              <IonIcon icon={informationCircleOutline} slot="start" />
-              <IonLabel>O Nas</IonLabel>
+          )}
+
+          {(roleId === 3 || roleId === 1) && (
+            <IonItem button onClick={goToOrders}>
+              <IonIcon icon={mapOutline} slot="start" />
+              <IonLabel>Zlecenia kierowcy</IonLabel>
             </IonItem>
+          )}
 
-            {role === "admin" && (
-              <IonItem button onClick={goToAdmin}>
-                <IonIcon icon={peopleOutline} slot="start" />
-                <IonLabel>Zarządzanie użytkownikami</IonLabel>
-              </IonItem>
-            )}
-
-            {(role === "kierowca" || role === "admin") && (
-              <IonItem button onClick={goToOrders}>
-                <IonIcon icon={mapOutline} slot="start" />
-                <IonLabel>Zlecenia kierowcy</IonLabel>
-              </IonItem>
-            )}
-
-            {/* ===== WYLOGUJ ===== */}
-            <IonItem button onClick={handleLogout}>
-              <IonIcon icon={logOutOutline} slot="start" />
-              <IonLabel>Wyloguj się</IonLabel>
-            </IonItem>
-          </IonMenuToggle>
-        </IonList>
-      </IonContent>
-    </IonMenu>
-  );
+          {/* ===== WYLOGUJ ===== */}
+          <IonItem button onClick={handleLogout}>
+            <IonIcon icon={logOutOutline} slot="start" />
+            <IonLabel>Wyloguj się</IonLabel>
+          </IonItem>
+        </IonMenuToggle>
+      </IonList>
+    </IonContent>
+  </IonMenu>
+);
 };
 
 export default Sidebar;

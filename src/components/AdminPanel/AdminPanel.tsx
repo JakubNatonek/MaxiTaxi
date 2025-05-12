@@ -24,8 +24,14 @@ interface User {
   imie?: string;
   email: string;
   telefon?: string;
-  typ_uzytkownika: string;
+  rola_id: number; // id roli z rola_as_uzytkownik
+  rola_nazwa?: string; // nazwa roli z tabela role
   data_utworzenia?: string;
+}
+
+interface Role {
+  id: number;
+  nazwa: string;
 }
 
 interface AdminPanelProps {
@@ -37,13 +43,11 @@ interface AdminPanelProps {
   getEncryptedData: (endpoint: string) => Promise<any>;
 }
 
-const roles = ["admin", "kierowca", "pasazer"];
-
 const emptyUser: User = {
   imie: "",
   email: "",
   telefon: "",
-  typ_uzytkownika: "pasazer",
+  rola_id: 2, // domyślnie pasażer
 };
 
 const AdminPanel: React.FC<AdminPanelProps> = ({
@@ -64,8 +68,25 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
   // NEW: Edit validation state
   const [editError, setEditError] = useState<string | null>(null);
+  const [roles, setRoles] = useState<Role[]>([]);
   const SERVER = import.meta.env.VITE_REACT_APP_API_URL || "";
-  // Pobieranie użytkowników z API
+
+  // Pobieranie ról z bazy
+  const fetchRoles = async () => {
+    try {
+      const token = localStorage.getItem("jwt");
+      const response = await fetch(SERVER + "/roles", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error("Błąd podczas pobierania ról");
+      const data = await response.json();
+      setRoles(data);
+    } catch (error) {
+      console.error("Błąd:", error);
+    }
+  };
+
+  // Pobieranie użytkowników z API (z nazwą roli)
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem("jwt");
@@ -82,6 +103,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   };
 
   useEffect(() => {
+    fetchRoles();
     fetchUsers();
   }, []);
 
@@ -103,11 +125,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
   // Edycja użytkownika
   const handleEdit = (user: User) => {
-    setEditUser({ ...user });
+    setEditUser({ ...user, rola_id: user.rola_id });
     setShowEditModal(true);
   };
 
-  const handleEditChange = (field: keyof User, value: string) => {
+  const handleEditChange = (field: keyof User, value: string | number) => {
     setEditUser((prev) => (prev ? { ...prev, [field]: value } : prev));
   };
 
@@ -124,18 +146,19 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     return true;
   };
 
+  // ZAPISZ EDYCJĘ użytkownika (w tym zmianę roli)
   const handleEditSave = async () => {
     if (!editUser) return;
     if (!validateEditForm()) return;
     try {
       const token = localStorage.getItem("jwt");
+      // Zaktualizuj dane użytkownika
       const body = JSON.stringify({
         imie: editUser.imie,
         telefon: editUser.telefon,
-        typ_uzytkownika: editUser.typ_uzytkownika,
       });
       const response = await fetch(
-        `http://localhost:8080/users/${encodeURIComponent(editUser.email)}`,
+        `${SERVER}/users/${encodeURIComponent(editUser.email)}`,
         {
           method: "PUT",
           headers: {
@@ -148,6 +171,23 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
       if (!response.ok) {
         const err = await response.json();
         setEditError(err.message || "Błąd podczas aktualizacji użytkownika");
+        return;
+      }
+      // Zaktualizuj rolę użytkownika w rola_as_uzytkownik
+      const roleRes = await fetch(
+        `${SERVER}/users/${encodeURIComponent(editUser.email)}/role`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ rola_id: editUser.rola_id }),
+        }
+      );
+      if (!roleRes.ok) {
+        const err = await roleRes.json();
+        setEditError(err.message || "Błąd podczas aktualizacji roli");
         return;
       }
       setShowEditModal(false);
@@ -165,7 +205,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     try {
       const token = localStorage.getItem("jwt");
       const response = await fetch(
-        `http://localhost:8080/users/${encodeURIComponent(editUser.email)}`,
+        `${SERVER}/users/${encodeURIComponent(editUser.email)}`,
         {
           method: "DELETE",
           headers: { Authorization: `Bearer ${token}` },
@@ -180,7 +220,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   };
 
   // Add user z hash + szyfrowanie
-  const handleAddChange = (field: keyof User, value: string) => {
+  const handleAddChange = (field: keyof User, value: string | number) => {
     setAddUser((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -201,6 +241,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     return true;
   };
 
+  // Dodawanie użytkownika z wybraną rolą
   const handleAddUser = async () => {
     if (!validateAddForm()) return;
     try {
@@ -211,10 +252,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
         email: addUser.email,
         imie: addUser.imie,
         telefon: addUser.telefon,
-        typ_uzytkownika: addUser.typ_uzytkownika,
         haslo: hashedPassword,
+        rola_id: addUser.rola_id,
       };
-      const response = await fetch("http://localhost:8080/users", {
+      const response = await fetch(`${SERVER}/users`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -288,7 +329,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                         <td>{user.email}</td>
                         <td>{user.imie}</td>
                         <td>{user.telefon}</td>
-                        <td>{user.typ_uzytkownika}</td>
+                        <td>{user.rola_nazwa}</td>
                         <td>
                           <IonButton
                             size="small"
@@ -325,7 +366,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                   <h2>Edytuj użytkownika</h2>
                   <IonItem>
                     <IonLabel position="stacked">Email</IonLabel>
-                    <IonInput value={editUser?.email} disabled />
+                    <IonInput value={editUser?.email} disabled  />
                   </IonItem>
                   <IonItem>
                     <IonLabel position="stacked">Imię</IonLabel>
@@ -354,14 +395,15 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                   <IonItem>
                     <IonLabel position="stacked">Typ użytkownika</IonLabel>
                     <select
-                      value={editUser?.typ_uzytkownika}
+                      value={editUser?.rola_id ?? ""}
                       onChange={(e) =>
-                        handleEditChange("typ_uzytkownika", e.target.value)
+                        handleEditChange("rola_id", Number(e.target.value))
                       }
                     >
+                      <option value="" disabled>Wybierz rolę</option>
                       {roles.map((role) => (
-                        <option key={role} value={role}>
-                          {role}
+                        <option key={role.id} value={role.id}>
+                          {role.nazwa}
                         </option>
                       ))}
                     </select>
@@ -444,14 +486,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                   <IonItem>
                     <IonLabel position="stacked">Typ użytkownika</IonLabel>
                     <select
-                      value={addUser.typ_uzytkownika}
+                      value={addUser.rola_id}
                       onChange={(e) =>
-                        handleAddChange("typ_uzytkownika", e.target.value)
+                        handleAddChange("rola_id", Number(e.target.value))
                       }
                     >
                       {roles.map((role) => (
-                        <option key={role} value={role}>
-                          {role}
+                        <option key={role.id} value={role.id}>
+                          {role.nazwa}
                         </option>
                       ))}
                     </select>
