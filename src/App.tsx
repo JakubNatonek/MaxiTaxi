@@ -80,7 +80,7 @@ const App: React.FC = () => {
       const encrypted = await encryptData(payload);
       
       const response = await fetch(`${SERVER}/${endpoint}`, {
-        method: method, // Używamy parametru method zamiast stałej wartości "POST"
+        method: method,
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
@@ -88,24 +88,33 @@ const App: React.FC = () => {
         body: JSON.stringify(encrypted)
       });
       
+      // Pobierz Content-Type przed odczytaniem ciała odpowiedzi
+      const contentType = response.headers.get("content-type");
+      
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`HTTP Error: ${response.status}`, errorText);
-        throw new Error(`Błąd HTTP: ${response.status}`);
+        // Obsługa błędu - odczytaj odpowiedź tylko raz
+        let errorMessage;
+        
+        if (contentType && contentType.includes("application/json")) {
+          const errorData = await response.json();
+          errorMessage = errorData.message || `Błąd ${response.status}`;
+        } else {
+          const errorText = await response.text();
+          errorMessage = errorText || `Błąd HTTP: ${response.status}`;
+        }
+        
+        throw new Error(errorMessage);
       }
       
-      // Sprawdzamy czy odpowiedź zawiera dane JSON
-      const contentType = response.headers.get("content-type");
+      // Obsługa odpowiedzi sukcesu
       if (contentType && contentType.includes("application/json")) {
-        const responseData = await response.json();
-        return responseData;
+        return await response.json();
       } else {
-        // Jeśli nie JSON, zwracamy surową odpowiedź
         return await response.text();
       }
     } catch (error: any) {
       console.error("Błąd przy wysyłaniu danych:", error);
-      throw new Error(error.message || "Wystąpił błąd podczas komunikacji z serwerem");
+      throw error;
     }
   };
 

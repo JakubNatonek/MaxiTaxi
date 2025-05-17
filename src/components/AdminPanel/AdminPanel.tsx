@@ -37,7 +37,8 @@ interface Role {
 interface AdminPanelProps {
   sendEncryptedData: (
     endpoint: string,
-    data: Record<string, unknown>
+    data: Record<string, unknown>,
+    method?: string // Dodanie opcjonalnego parametru dla metody HTTP
   ) => Promise<any>;
   hashPassword: (password: string, salt: string) => Promise<string>;
   getEncryptedData: (endpoint: string) => Promise<any>;
@@ -74,31 +75,21 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   // Pobieranie ról z bazy
   const fetchRoles = async () => {
     try {
-      const token = localStorage.getItem("jwt");
-      const response = await fetch(SERVER + "/roles", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!response.ok) throw new Error("Błąd podczas pobierania ról");
-      const data = await response.json();
+      const data = await getEncryptedData("roles");
       setRoles(data);
     } catch (error) {
-      console.error("Błąd:", error);
+      console.error("Błąd podczas pobierania ról:", error);
     }
   };
 
   // Pobieranie użytkowników z API (z nazwą roli)
   const fetchUsers = async () => {
     try {
-      const token = localStorage.getItem("jwt");
-      const response = await fetch(SERVER + "/users", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!response.ok) throw new Error("Błąd podczas pobierania użytkowników");
-      const data = await response.json();
+      const data = await getEncryptedData("users");
       setUsers(data);
       setFilteredUsers(data);
     } catch (error) {
-      console.error("Błąd:", error);
+      console.error("Błąd podczas pobierania użytkowników:", error);
     }
   };
 
@@ -151,45 +142,29 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     if (!editUser) return;
     if (!validateEditForm()) return;
     try {
-      const token = localStorage.getItem("jwt");
-      // Zaktualizuj dane użytkownika
-      const body = JSON.stringify({
+      // Aktualizuj dane użytkownika
+      const userData = {
         imie: editUser.imie,
         telefon: editUser.telefon,
-      });
-      const response = await fetch(
-        `${SERVER}/users/${encodeURIComponent(editUser.email)}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body,
-        }
+      };
+      
+      await sendEncryptedData(
+        `users/${encodeURIComponent(editUser.email)}`, 
+        userData, 
+        "PUT"  // Dodaj metodę PUT
       );
-      if (!response.ok) {
-        const err = await response.json();
-        setEditError(err.message || "Błąd podczas aktualizacji użytkownika");
-        return;
-      }
-      // Zaktualizuj rolę użytkownika w rola_as_uzytkownik
-      const roleRes = await fetch(
-        `${SERVER}/users/${encodeURIComponent(editUser.email)}/role`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ rola_id: editUser.rola_id }),
-        }
+      
+      // Aktualizuj rolę użytkownika
+      const roleData = {
+        rola_id: editUser.rola_id
+      };
+      
+      await sendEncryptedData(
+        `users/${encodeURIComponent(editUser.email)}/role`, 
+        roleData, 
+        "PUT"  // Dodaj metodę PUT
       );
-      if (!roleRes.ok) {
-        const err = await roleRes.json();
-        setEditError(err.message || "Błąd podczas aktualizacji roli");
-        return;
-      }
+      
       setShowEditModal(false);
       fetchUsers();
     } catch (err) {
@@ -201,21 +176,19 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   // Usunięcie użytkownika
   const handleDelete = async () => {
     if (!editUser) return;
-    if (!window.confirm("Czy na pewno chcesz usunąć tego użytkownika?")) return;
+    if (!window.confirm("Czy na pewno chcesz zamknąć konto tego użytkownika?")) return;
     try {
-      const token = localStorage.getItem("jwt");
-      const response = await fetch(
-        `${SERVER}/users/${encodeURIComponent(editUser.email)}`,
-        {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      if (!response.ok) throw new Error("Błąd podczas usuwania użytkownika");
+      // Zamiast usuwać, zmieniamy rolę użytkownika na 4 (zamknięte)
+      const roleData = {
+        rola_id: 4  // Zamknięte konto
+      };
+      
+      // Dodaj trzeci parametr "PUT", ponieważ endpoint oczekuje metody PUT
+      await sendEncryptedData(`users/${encodeURIComponent(editUser.email)}/role`, roleData, "PUT");
       setShowEditModal(false);
       fetchUsers();
     } catch (err) {
-      console.error("Błąd:", err);
+      console.error("Błąd podczas zamykania konta użytkownika:", err);
     }
   };
 
@@ -245,36 +218,26 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   const handleAddUser = async () => {
     if (!validateAddForm()) return;
     try {
-      const token = localStorage.getItem("jwt");
       const salt = import.meta.env.VITE_REACT_APP_SALT || "";
       const hashedPassword = await hashPassword(addPassword, salt);
-      const payload = {
+      
+      const userData = {
         email: addUser.email,
         imie: addUser.imie,
         telefon: addUser.telefon,
         haslo: hashedPassword,
         rola_id: addUser.rola_id,
       };
-      const response = await fetch(`${SERVER}/users`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
-      if (!response.ok) {
-        const err = await response.json();
-        setAddError(err.message || "Błąd podczas dodawania użytkownika");
-        return;
-      }
+      
+      await sendEncryptedData("users", userData);
+      
       setShowAddModal(false);
       setAddUser(emptyUser);
       setAddPassword("");
       setAddError(null);
       fetchUsers();
-    } catch (err: any) {
-      setAddError(err.message || "Błąd podczas dodawania użytkownika");
+    } catch (err) {
+      setAddError("Błąd podczas dodawania użytkownika");
       console.error("Błąd:", err);
     }
   };
@@ -425,7 +388,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                         color="danger"
                         onClick={handleDelete}
                       >
-                        Usuń użytkownika
+                        Zamknij konto użytkownika
                       </IonButton>
                     </IonCol>
                   </IonRow>
