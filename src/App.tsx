@@ -74,32 +74,40 @@ const App: React.FC = () => {
     return { iv: Array.from(iv), data: Array.from(new Uint8Array(encrypted)) };
   }
 
-  async function sendEncryptedData(endpoint: string, data: Record<string, unknown>): Promise<any> {
+  const sendEncryptedData = async (endpoint: string, data: Record<string, unknown>, method: string = "POST") => {
     try {
-      const encryptedPayload = await encryptData(data);
-      const token = localStorage.getItem("jwt"); // Pobierz token z localStorage
-  
+      const payload = { ...data };
+      const encrypted = await encryptData(payload);
+      
       const response = await fetch(`${SERVER}/${endpoint}`, {
-        method: "POST",
+        method: method, // Używamy parametru method zamiast stałej wartości "POST"
         headers: {
           "Content-Type": "application/json",
-          Authorization: token ? `Bearer ${token}` : "", 
+          "Authorization": `Bearer ${token}`
         },
-        body: JSON.stringify(encryptedPayload),
+        body: JSON.stringify(encrypted)
       });
-  
+      
       if (!response.ok) {
-        const errorResult = await response.json();
-        throw new Error(errorResult.message || "Wystąpił błąd");
+        const errorText = await response.text();
+        console.error(`HTTP Error: ${response.status}`, errorText);
+        throw new Error(`Błąd HTTP: ${response.status}`);
       }
-  
-      const result = await response.json();
-      return result; 
+      
+      // Sprawdzamy czy odpowiedź zawiera dane JSON
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const responseData = await response.json();
+        return responseData;
+      } else {
+        // Jeśli nie JSON, zwracamy surową odpowiedź
+        return await response.text();
+      }
     } catch (error: any) {
       console.error("Błąd przy wysyłaniu danych:", error);
-      throw error; 
+      throw new Error(error.message || "Wystąpił błąd podczas komunikacji z serwerem");
     }
-  }
+  };
 
   async function decryptData(iv: number[], encryptedData: number[]): Promise<any> {
     const ivBuffer = new Uint8Array(iv);

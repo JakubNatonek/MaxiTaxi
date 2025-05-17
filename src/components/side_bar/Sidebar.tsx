@@ -138,19 +138,24 @@ const roleId = Number(localStorage.getItem("roleId"));
             <IonIcon icon={personOutline} slot="start" />
             <IonLabel>Profil</IonLabel>
           </IonItem>
-
           {/* ZAMIANA: Sprawdzanie po roleId */}
           {roleId === 1 && (
-            <IonItem button onClick={goToAdmin}>
-              <IonIcon icon={peopleOutline} slot="start" />
-              <IonLabel>Zarządzanie użytkownikami</IonLabel>
-            </IonItem>
+            <>
+              <IonItem button onClick={goToAdmin}>
+                <IonIcon icon={peopleOutline} slot="start" />
+                <IonLabel>Zarządzanie użytkownikami</IonLabel>
+              </IonItem>
+              <IonItem button onClick={() => handlePageChange("AdminRidesPanel")}>
+                <IonIcon icon={personOutline} slot="start" />
+                <IonLabel>Zarządzanie przejazdami</IonLabel>
+              </IonItem>
+            </>
           )}
 
           {(roleId === 3 || roleId === 1) && (
             <IonItem button onClick={goToOrders}>
-              <IonIcon icon={mapOutline} slot="start" />
-              <IonLabel>Zlecenia kierowcy</IonLabel>
+                <IonIcon icon={mapOutline} slot="start" />
+                <IonLabel>Zlecenia kierowcy</IonLabel>
             </IonItem>
           )}
 

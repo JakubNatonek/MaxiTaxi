@@ -25,6 +25,7 @@ import ChatList from "../chat/ChatList";
 import Chat from "../chat/Chats";
 import Rides from "../ride/rides";
 import Profile from "../profile/Profile";
+import AdminRidesPanel from "../AdminRidesPanel/AdminRidesPanel";
 // import MapComponent2 from "../map/map2";
 
 interface MainViewProps {
@@ -112,7 +113,7 @@ const MainView: React.FC<MainViewProps> = ({
   const getOrders = async () => {
     const response = await getEncryptedData("zlecenia");
     setOrders(response);
-    console.log(response);
+    //console.log(response);
   };
 
   return (
@@ -131,6 +132,12 @@ const MainView: React.FC<MainViewProps> = ({
             <AdminPanel
               sendEncryptedData={sendEncryptedData}
               hashPassword={hashPassword}
+              getEncryptedData={getEncryptedData}
+            />
+          )}
+          {currentPage === "AdminRidesPanel" && (
+            <AdminRidesPanel
+              sendEncryptedData={sendEncryptedData}
               getEncryptedData={getEncryptedData}
             />
           )}

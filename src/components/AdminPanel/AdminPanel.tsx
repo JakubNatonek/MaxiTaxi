@@ -66,7 +66,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   const [addPassword, setAddPassword] = useState("");
   const [addError, setAddError] = useState<string | null>(null);
 
-  // NEW: Edit validation state
+  
   const [editError, setEditError] = useState<string | null>(null);
   const [roles, setRoles] = useState<Role[]>([]);
   const SERVER = import.meta.env.VITE_REACT_APP_API_URL || "";
