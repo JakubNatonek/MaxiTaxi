@@ -26,7 +26,7 @@ import Chat from "../chat/Chats";
 import Rides from "../ride/rides";
 import Profile from "../profile/Profile";
 import AdminRidesPanel from "../AdminRidesPanel/AdminRidesPanel";
-// import MapComponent2 from "../map/map2";
+import RideDetail from "../ride/RideDetail";
 
 interface MainViewProps {
   sendEncryptedData: (
@@ -125,6 +125,7 @@ const MainView: React.FC<MainViewProps> = ({
             <MapComponent
               sendEncryptedData={sendEncryptedData}
               getEncryptedData={getEncryptedData}
+              handlePageChange={handlePageChange}
             />
           )}
           {currentPage === "payments" && <Payments />}
@@ -162,10 +163,19 @@ const MainView: React.FC<MainViewProps> = ({
               orders={orders} // Przekazanie zamówień do komponentu
             />
           )}
+          {currentPage === "rideDetail" && pageParams?.rideId && (
+            <RideDetail 
+              sendEncryptedData={sendEncryptedData}
+              getEncryptedData={getEncryptedData}
+              rideId={pageParams.rideId}
+              handlePageChange={handlePageChange}
+            />
+          )}
           {currentPage === "rides" && <Rides
               sendEncryptedData={sendEncryptedData}
               getEncryptedData={getEncryptedData}
-              orders={orders} // Przekazanie zamówień do komponentu
+              orders={orders}
+              handlePageChange={handlePageChange}
            />}
             {currentPage === "profile" && <Profile />}
         </IonPage>

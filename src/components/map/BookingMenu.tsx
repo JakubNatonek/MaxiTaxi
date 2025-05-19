@@ -20,6 +20,7 @@ interface BookingMenuProps {
     data: Record<string, unknown>
   ) => Promise<any>;
   getEncryptedData: (endpoint: string) => Promise<any>;
+  handlePageChange: (page: string, params?: any) => void;
   routeData: any;
 }
 
@@ -30,6 +31,7 @@ const BookingMenu: React.FC<BookingMenuProps> = ({
   sendEncryptedData,
   getEncryptedData,
   routeData,
+  handlePageChange
 }) => {
   const [listDrivers, setListDrivers] = useState<
     { uzytkownik_id: number; imie_kierowcy: string; dystans_km: number }[]
@@ -81,7 +83,7 @@ const BookingMenu: React.FC<BookingMenuProps> = ({
     setSelectedDriver(driverId);
   };
 
-  const handleOrderRide = () => {
+  const handleOrderRide = async () => {
     // Opłata startowa	5,00 – 8,00 zł
     // Taryfa 1 (dzień 6:00 – 22:00)	1,50 – 3,00 zł / km
     // Taryfa 2 (noc 22:00 – 6:00)	2,50 – 4,50 zł / km
@@ -95,7 +97,22 @@ const BookingMenu: React.FC<BookingMenuProps> = ({
       cena: ((routeData.routes[0].distance * 4.5) / 1000 + 8).toFixed(2),
       status_id: 1,
     };
-    sendEncryptedData("zlecenia", data);
+    try {
+      const response = await sendEncryptedData("zlecenia", data);
+    
+      const ridesResponse = await getEncryptedData("zlecenia");
+
+       const latestRide = ridesResponse.sort((a: any, b: any) => {
+        return new Date(b.data_zamowienia).getTime() - new Date(a.data_zamowienia).getTime();
+      })[0];
+    
+    setShowBooking(false);
+
+    handlePageChange("rideDetail", { rideId: latestRide.zlecenie_id });
+
+    } catch (error) {
+      console.error("Błąd podczas zamawiania przejazdu:", error);
+    }
   };
 
   return (

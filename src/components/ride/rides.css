@@ -1,0 +1,36 @@
+.active-ride {
+  border-left: 4px solid #2dd36f !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  background-color: rgba(45, 211, 111, 0.1) !important;
+}
+
+.order-card-title {
+  font-weight: bold;
+  font-size: 1.2rem;
+  margin-bottom: 10px;
+}
+
+.order-card-details {
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.order-card-details p {
+  margin: 5px 0;
+}
+
+.no-orders {
+  text-align: center;
+  padding: 20px;
+  color: #888;
+  font-style: italic;
+}
+
+.map {
+  width: 100%;
+  height: 500px;
+}
+
+.ride-card-content {
+  padding: 10px;
+}

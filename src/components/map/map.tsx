@@ -34,11 +34,13 @@ interface MapComponentProps {
     data: Record<string, unknown>
   ) => Promise<any>;
   getEncryptedData: (endpoint: string) => Promise<any>;
+  handlePageChange?: (page: string, params?: any) => void;
 }
 
 const MapComponent2: React.FC<MapComponentProps> = ({
   sendEncryptedData,
   getEncryptedData,
+  handlePageChange = () => {}
 }) => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [userLocation, setUserLocation] = useState<{
@@ -413,6 +415,7 @@ const MapComponent2: React.FC<MapComponentProps> = ({
               sendEncryptedData={sendEncryptedData}
               getEncryptedData={getEncryptedData}
               routeData={routeData}
+              handlePageChange={handlePageChange}
             />
           </IonRow>
         </IonContent>

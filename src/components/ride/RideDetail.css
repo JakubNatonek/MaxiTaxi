@@ -1,0 +1,38 @@
+.ride-detail-container {
+  padding: 10px;
+}
+
+.ride-title {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.map-title {
+  font-size: 18px;
+  font-weight: 500;
+  margin-top: 20px;
+  margin-bottom: 10px;
+}
+
+.map-container {
+  height: 400px;
+  width: 100%;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.rating-stars {
+  font-size: 40px;
+  margin: 20px 0;
+}
+
+.rating-star {
+  font-size: 40px;
+  color: #ffc409;
+  margin: 0 5px;
+  cursor: pointer;
+}
