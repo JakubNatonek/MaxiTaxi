@@ -46,12 +46,14 @@ interface DriverOrdersProps {
   ) => Promise<any>;
   getEncryptedData: (endpoint: string) => Promise<any>;
   orders: Order[]; // Opcjonalna lista zamówień
+   handlePageChange: (page: string, params?: any) => void;
 }
 
 const DriverOrders: React.FC<DriverOrdersProps> = ({
   sendEncryptedData,
   getEncryptedData,
   orders, // Użyj przekazanej listy zamówień lub pustej tablicy
+  handlePageChange,
 }) => {
   const [myOrders, setMyOrders] = useState<Order[]>(orders);
   const [curentOrder, setCurentOrder] = useState<Order | null>(null);
@@ -300,6 +302,7 @@ const DriverOrders: React.FC<DriverOrdersProps> = ({
                   <IonButton expand="full" color="success" onClick={() => {
                     updateOrderStatus(curentOrder!.zlecenie_id, 2);
                     setIsMapVisible(false);
+                    handlePageChange("ChatList");
                   }}>
                     Akceptuj
                   </IonButton>

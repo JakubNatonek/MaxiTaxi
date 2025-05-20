@@ -17,4 +17,26 @@ http://ionicframework.com/docs/theming/ */
     --ion-color-custom-grey-shade: #1f1f1f;
     --ion-color-custom-grey-tint: #3a3a3a;
   }
-  
+
+.custom-toast {
+  --background: rgba(255,255,255,0.9);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  --min-height: 80px;
+  --font-size: 1rem;
+  color: #121212;
+}
+
+.custom-toast .toast-button {
+  --button-height: 24px;
+  --button-font-size: 0.75rem;
+  padding: 0 8px;
+}
+
+.custom-toast .toast-button:not([role="cancel"]) {
+  color: #121212;
+}
+
+.custom-toast .toast-button[role="cancel"] {
+  color: #121212;
+}

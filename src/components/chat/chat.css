@@ -151,3 +151,10 @@ ion-menu {
   margin-top: 2px;
   text-align: start;
 }
+
+.chat-bubble.admin {
+  background: #004080 !important;
+  color: #fff !important;
+  align-self: flex-start;
+  border-bottom-left-radius: 4px;
+}
