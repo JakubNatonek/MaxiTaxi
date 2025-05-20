@@ -12,12 +12,11 @@
 .map-title {
   font-size: 18px;
   font-weight: 500;
-  margin-top: 20px;
-  margin-bottom: 10px;
+  margin: 20px 0 10px;
 }
 
 .map-container {
-  height: 400px;
+  height: 300px;
   width: 100%;
   margin-bottom: 20px;
   border-radius: 8px;
@@ -25,14 +24,217 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
+/* ===== Style dla systemu ocen ===== */
+.rating-container {
+  padding: 20px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.rating-title {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 24px;
+  color: #333;
+}
+
 .rating-stars {
-  font-size: 40px;
-  margin: 20px 0;
+  display: flex;
+  justify-content: center;
+  margin: 16px 0;
 }
 
 .rating-star {
-  font-size: 40px;
-  color: #ffc409;
-  margin: 0 5px;
+  font-size: 42px;
+  padding: 0 8px;
+  color: #cccccc;
   cursor: pointer;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+/* Złoty kolor dla zaznaczonych gwiazdek */
+.rating-star.active, 
+.rating-star:hover {
+  color: #ffd700; /* Standardowy złoty kolor */
+  transform: scale(1.2);
+}
+
+/* Animacja dla gwiazdek */
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+.rating-star.active {
+  animation: pulse 0.3s ease-in-out;
+}
+
+/* ===== Style dla komentarza ===== */
+.comment-container {
+  margin: 24px 0;
+  border-radius: 12px;
+  overflow: hidden;
+  --background: #f5f5f5;
+  width: 100%;
+}
+
+.comment-container ion-textarea {
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --padding-top: 12px;
+  --background: #f5f5f5;
+  font-size: 16px;
+}
+
+/* ===== Style dla modali ===== */
+.modal-header {
+  --background: #f9f9f9;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.modal-header ion-title {
+  font-weight: 600;
+  font-size: 20px;
+}
+
+.modal-button {
+  --border-radius: 10px;
+  --padding-top: 14px;
+  --padding-bottom: 14px;
+  font-weight: 600;
+  font-size: 16px;
+  margin: 16px 0;
+  --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* ===== Style dla płatności ===== */
+.payment-container {
+  padding: 20px;
+  text-align: center;
+}
+
+.payment-icon {
+  font-size: 64px;
+  color: #336cfb;
+  margin-bottom: 24px;
+}
+
+.payment-title {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #333;
+}
+
+.payment-description {
+  font-size: 16px;
+  color: #666;
+  line-height: 1.5;
+  margin-bottom: 32px;
+}
+
+/* Style dla podsumowania płatności */
+.payment-summary {
+  background: #f5f5f5;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid #e0e0e0;
+  font-size: 16px;
+}
+
+.summary-row:last-child {
+  border-bottom: none;
+}
+
+.summary-row .value {
+  font-weight: 600;
+}
+
+.summary-row .price {
+  color: #336cfb;
+  font-size: 18px;
+}
+
+/* ===== Style dla komunikatów ===== */
+.success-message {
+  padding: 32px 16px;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 600;
+  color: #28a745;
+}
+
+.error-message {
+  color: #dc3545;
+  text-align: center;
+  margin-top: 16px;
+  font-weight: 500;
+}
+
+/* ===== Style dla toast ===== */
+.ride-status-toast {
+  --min-height: 70px;
+  --min-width: 320px;
+  --max-width: 90%;
+  --border-radius: 12px;
+  --box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  font-weight: 600;
+  font-size: 16px;
+  letter-spacing: 0.2px;
+  text-align: center;
+  padding: 8px;
+  line-height: 1.4;
+}
+
+.ride-status-toast::part(message) {
+  padding: 12px 8px;
+  font-size: 16px;
+}
+
+/* Kolorystyka toast */
+.toast-success {
+  --background: rgba(40, 167, 69, 0.96);
+  --border-color: #198754;
+  --border-style: solid;
+  --border-width: 1px;
+  --color: white;
+}
+
+.toast-danger {
+  --background: rgba(220, 53, 69, 0.96);
+  --border-color: #dc3545;
+  --border-style: solid;
+  --border-width: 1px;
+  --color: white;
+}
+
+.toast-tertiary {
+  --background: rgba(51, 108, 251, 0.96);
+  --border-color: #336cfb;
+  --border-style: solid;
+  --border-width: 1px;
+  --color: white;
+}
+
+.toast-button {
+  font-weight: 600;
+  margin: 0 12px;
+  border-radius: 8px;
+  --color: white;
+  --background: rgba(255, 255, 255, 0.2);
+  --background-hover: rgba(255, 255, 255, 0.3);
+  text-transform: uppercase;
+  font-size: 14px;
+  letter-spacing: 0.5px;
+  padding: 8px 16px;
 }

@@ -118,7 +118,7 @@ const Rides: React.FC<RidesProps> = ({
   const handleTrasShow = (route: string) => {
     if (mapInstance) {
       const decodedCoordinates = polyline.decode(route);
-      console.log(decodedCoordinates);
+      //console.log(decodedCoordinates);
       const routeDecoded = decodedCoordinates.map(
         (coord) => [coord[0], coord[1]] as [number, number]
       );
@@ -169,7 +169,7 @@ const Rides: React.FC<RidesProps> = ({
 
   // W komponencie Rides dodaj useEffect do logowania statusów
   useEffect(() => {
-    console.log("Statusy przejazdów:", myOrders.map(order => ({ id: order.zlecenie_id, status: order.status })));
+    //console.log("Statusy przejazdów:", myOrders.map(order => ({ id: order.zlecenie_id, status: order.status })));
   }, [myOrders]);
 
   return (

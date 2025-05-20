@@ -24,9 +24,9 @@ import {
   IonItem,
   IonLabel,
   IonList,
+  IonToast
 } from "@ionic/react";
 import { star, starOutline } from "ionicons/icons";
-
 import "leaflet/dist/leaflet.css";
 import polyline from "polyline";
 import L from "leaflet";
@@ -56,9 +56,10 @@ interface RideDetailProps {
 const RideDetail: React.FC<RideDetailProps> = ({
   sendEncryptedData,
   getEncryptedData,
-  rideId,
+  rideId: rideIdProp,
   handlePageChange
 }) => {
+  // Stan podstawowy
   const [ride, setRide] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -68,75 +69,110 @@ const RideDetail: React.FC<RideDetailProps> = ({
   const [comment, setComment] = useState<string>("");
   const [ratingError, setRatingError] = useState<string | null>(null);
   const [ratingSuccess, setRatingSuccess] = useState<string | null>(null);
+  const [statusChanged, setStatusChanged] = useState<boolean>(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>("");
   
+  // Referencje do mapy
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstance = useRef<L.Map | null>(null);
+  const [routeGeometry, setRouteGeometry] = useState<string | null>(null);
+  const [rideId, setRideId] = useState<number>(rideIdProp);
 
-  // Pobierz szczegóły przejazdu
-  useEffect(() => {
-    const fetchRideDetails = async () => {
+  // Pobieranie danych przejazdu
+  const fetchRideDetails = async (silentRefresh = false) => {
+    if (!silentRefresh) {
       setIsLoading(true);
-      try {
-        const response = await getEncryptedData(`zlecenia`);
-        const foundRide = response.find((r: Order) => r.zlecenie_id === rideId);
+    }
+    
+    try {
+      const response = await getEncryptedData(`zlecenia`);
+      const foundRide = response.find((r: Order) => r.zlecenie_id === rideId);
+      
+      if (foundRide) {       
+        setRide((prevRide) => {
+          if (prevRide && 
+              prevRide.status === foundRide.status && 
+              prevRide.cena === foundRide.cena &&
+              prevRide.dystans_km === foundRide.dystans_km) {
+            return prevRide;
+          }
+          return foundRide;
+        });
         
-        if (foundRide) {
-          setRide(foundRide);
-        } else {
+       
+      } else {
+        if (!silentRefresh) {
           setError("Nie znaleziono szczegółów przejazdu");
         }
-      } catch (err) {
-        console.error("Błąd pobierania szczegółów przejazdu:", err);
+      }
+    } catch (err) {
+      if (!silentRefresh) {
         setError("Wystąpił błąd podczas pobierania danych");
-      } finally {
+      }
+    } finally {
+      if (!silentRefresh) {
         setIsLoading(false);
       }
-    };
-
-    fetchRideDetails();
-  }, [rideId, getEncryptedData]);
-
-  // Inicjalizacja mapy i wyświetlenie trasy
-  useEffect(() => {
-    if (mapRef.current && ride?.trasa_przejazdu && !mapInstance.current) {
-      // Inicjalizacja mapy
-      const map = L.map(mapRef.current).setView([50.049683, 19.944544], 12);
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: "© OpenStreetMap contributors"
-      }).addTo(map);
-      
-      mapInstance.current = map;
-
-      try {
-        // Dekodowanie polyline
-        const decodedCoordinates = polyline.decode(ride.trasa_przejazdu);
-        const routePoints = decodedCoordinates.map(
-          coord => [coord[0], coord[1]] as [number, number]
-        );
-        
-        if (routePoints.length > 0) {
-          const routeLine = L.polyline(routePoints, { color: 'blue', weight: 5 }).addTo(map);
-          
-          const startPoint = routePoints[0];
-          const endPoint = routePoints[routePoints.length - 1];
-          
-          L.marker(startPoint, { title: "Miejsce startowe" })
-            .addTo(map)
-            .bindPopup("Miejsce startowe")
-            .openPopup();
-            
-          L.marker(endPoint, { title: "Miejsce docelowe" })
-            .addTo(map)
-            .bindPopup("Miejsce docelowe");
-            
-          map.fitBounds(routeLine.getBounds());
-        }
-      } catch (err) {
-        console.error("Błąd wyświetlania trasy:", err);
-      }
     }
+  };
 
-    // Cleanup funkcji gdy komponent zostanie odmontowany
+  // Inicjalne pobranie danych
+  useEffect(() => {
+    fetchRideDetails(false);
+  }, [rideId]);
+
+  // Odświeżanie danych co 5 sekund
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchRideDetails(true);
+    }, 5000);
+    
+    return () => clearInterval(interval);
+  }, [rideId]);
+
+  // Inicjalizacja mapy
+  useEffect(() => {
+    if (mapRef.current && !mapInstance.current && ride) {
+      setTimeout(() => {
+        try {
+          const map = L.map(mapRef.current!).setView([50.049683, 19.944544], 12);
+          L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: "© OpenStreetMap contributors"
+          }).addTo(map);
+          
+          mapInstance.current = map;
+          
+          // Renderowanie trasy
+          if (ride.trasa_przejazdu) {
+            const decodedCoordinates = polyline.decode(ride.trasa_przejazdu);
+            const routePoints = decodedCoordinates.map(
+              coord => [coord[0], coord[1]] as [number, number]
+            );
+            
+            if (routePoints.length > 0) {
+              const routeLine = L.polyline(routePoints, { color: 'blue', weight: 5 }).addTo(map);
+              
+              const startPoint = routePoints[0];
+              const endPoint = routePoints[routePoints.length - 1];
+              
+              L.marker(startPoint, { title: "Miejsce startowe" })
+                .addTo(map)
+                .bindPopup("Miejsce startowe")
+                .openPopup();
+                
+              L.marker(endPoint, { title: "Miejsce docelowe" })
+                .addTo(map)
+                .bindPopup("Miejsce docelowe");
+                
+              map.fitBounds(routeLine.getBounds());
+            }
+          }
+        } catch (err) {
+          console.error("Błąd inicjalizacji mapy:", err);
+        }
+      }, 500);
+    }
+    
     return () => {
       if (mapInstance.current) {
         mapInstance.current.remove();
@@ -145,18 +181,27 @@ const RideDetail: React.FC<RideDetailProps> = ({
     };
   }, [ride]);
 
-  // Funkcja zakończenia przejazdu
-  const handleCompleteRide = async () => {
+  // Automatyczne przekierowanie przy anulowaniu
+  useEffect(() => {
+    if (ride?.status === "anulowany") {
+      const timer = setTimeout(() => {
+        handlePageChange("map");
+      }, 5000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [ride?.status, handlePageChange]);
+
+  // Funkcje obsługi akcji
+  const handleCompleteRide = () => {
     setShowPaymentModal(true);
   };
 
-  // Funkcja symulacji płatności
   const handlePayment = () => {
     setShowPaymentModal(false);
     setShowRatingModal(true);
   };
 
-  // Funkcja obsługi oceny
   const handleSubmitRating = async () => {
     if (rating === 0) {
       setRatingError("Proszę wybrać ocenę");
@@ -168,14 +213,12 @@ const RideDetail: React.FC<RideDetailProps> = ({
     try {
       setIsLoading(true);
       
-      // Zmiana statusu przejazdu na zakończony (status_id = 3 to zakończony)
       await sendEncryptedData(
         `zlecenia/${ride.zlecenie_id}/status`, 
         { status_id: 3 },
-        "PUT"  // Dodajemy metodę PUT
+        "PUT"
       );
 
-      // Zapisanie oceny kierowcy
       await sendEncryptedData(
         "oceny", 
         {
@@ -186,37 +229,26 @@ const RideDetail: React.FC<RideDetailProps> = ({
         }
       );
 
-    await sendEncryptedData(
-      "update-driver-rating",
-      {
-        kierowca_id: ride.kierowca_id
-      }
-    );
-
       setRatingSuccess("Dziękujemy za ocenę!");
       
-      // Po 2 sekundach zamknij modal i wróć do mapy
       setTimeout(() => {
         setShowRatingModal(false);
         handlePageChange("map");
       }, 2000);
       
     } catch (err) {
-      console.error("Błąd podczas zapisywania oceny:", err);
       setRatingError("Wystąpił błąd podczas zapisywania oceny");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Funkcja anulowania przejazdu 
   const handleCancelRide = async () => {
     if (!ride) return;
 
     try {
       setIsLoading(true);
       
-      // Zmiana statusu przejazdu na anulowany (status_id = 4 to anulowany)
       await sendEncryptedData(
         `zlecenia/${ride.zlecenie_id}/status`, 
         { status_id: 4 },
@@ -225,20 +257,18 @@ const RideDetail: React.FC<RideDetailProps> = ({
 
       setRatingSuccess("Przejazd został anulowany.");
       
-      // Po 2 sekundach wróć do mapy
       setTimeout(() => {
         handlePageChange("map");
       }, 2000);
       
     } catch (err) {
-      console.error("Błąd podczas anulowania przejazdu:", err);
       setRatingError("Wystąpił błąd podczas anulowania przejazdu");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Funkcja renderowania gwiazdek
+  // Renderowanie gwiazdek oceny
   const renderStars = () => {
     const stars = [];
     for (let i = 1; i <= 5; i++) {
@@ -246,13 +276,45 @@ const RideDetail: React.FC<RideDetailProps> = ({
         <IonIcon
           key={i}
           icon={i <= rating ? star : starOutline}
-          className="rating-star"
+          className={`rating-star ${i <= rating ? 'active' : ''}`}
           onClick={() => setRating(i)}
         />
       );
     }
     return stars;
   };
+
+  useEffect(() => {
+    if (ride && ride.status) {
+      const savedStatus = sessionStorage.getItem('lastRideStatus_' + ride.zlecenie_id);
+      
+      if (savedStatus === null) {
+        // Pierwszy raz otwieramy ten przejazd - zapisz status bez pokazywania powiadomienia
+        sessionStorage.setItem('lastRideStatus_' + ride.zlecenie_id, ride.status);
+      } 
+      else if (savedStatus !== ride.status) {
+        // Status się zmienił - pokaż powiadomienie
+        let message = "";
+        switch (ride.status) {
+          case "w trakcie":
+            message = "✓ Przejazd został zaakceptowany przez kierowcę!";
+            break;
+          case "odrzucone":
+            message = "✗ Przejazd został odrzucony przez kierowcę.";
+            break;
+          case "zakonczone":
+            message = "✓ Przejazd został zakończony pomyślnie.";
+            break;
+          default:
+            message = `Status przejazdu: ${ride.status}`;
+        }
+        
+        setStatusMessage(message);
+        setStatusChanged(true);
+        sessionStorage.setItem('lastRideStatus_' + ride.zlecenie_id, ride.status);
+      }
+    }
+  }, [ride?.status, ride?.zlecenie_id]);
 
   return (
     <IonApp>
@@ -263,14 +325,39 @@ const RideDetail: React.FC<RideDetailProps> = ({
               <IonMenuButton />
             </IonButtons>
             <IonTitle className="toolbar-logo-title">
-              <img src="public/assets/menu_logo.png" alt="MaxiTaxi Logo" />
+              <img src="/assets/menu_logo.png" alt="MaxiTaxi Logo" />
             </IonTitle>
           </IonToolbar>
         </IonHeader>
 
         <IonContent>
-          <IonLoading isOpen={isLoading} message={"Proszę czekać..."} />
+          <IonLoading isOpen={isLoading} message="Proszę czekać..." />
           
+          <IonToast
+            isOpen={statusChanged}
+            message={statusMessage || ""}
+            duration={5000}
+            position="top"
+            color={
+              statusMessage?.includes("zaakceptowany") ? "success" : 
+              statusMessage?.includes("odrzucony") ? "danger" : 
+              statusMessage?.includes("zakończony") ? "tertiary" : "primary"
+            }
+            onDidDismiss={() => setStatusChanged(false)}
+            buttons={[{ 
+              text: 'OK', 
+              role: 'cancel',
+              handler: () => setStatusChanged(false) 
+            }]}
+            cssClass={`ride-status-toast ${
+              statusMessage?.includes("zaakceptowany") ? "toast-success" : 
+              statusMessage?.includes("odrzucony") ? "toast-danger" : 
+              statusMessage?.includes("zakończony") ? "toast-tertiary" : ""
+            }`}
+            animated={true}
+            mode="ios"
+          />
+
           {error && (
             <IonCard>
               <IonCardContent>
@@ -338,46 +425,60 @@ const RideDetail: React.FC<RideDetailProps> = ({
                 </IonCol>
               </IonRow>
               
-              {ride && (
-                <IonRow>
-                  <IonCol size="12" className="ion-text-center ion-padding">
-                    {ride.status === "w trakcie" && (
-                      <IonButton 
-                        color="success" 
-                        expand="block"
-                        size="large"
-                        onClick={handleCompleteRide}
-                      >
-                        Zakończ przejazd
-                      </IonButton>
-                    )}
-                    
-                    {ride.status === "zlecono" && (
-                      <IonButton 
-                        color="danger" 
-                        expand="block"
-                        size="large"
-                        onClick={handleCancelRide}
-                      >
-                        Anuluj przejazd
-                      </IonButton>
-                    )}
-                      <IonButton 
-                        color="medium" 
-                        expand="block"
-                        size="default"
-                        className="ion-margin-top"
-                        onClick={() => handlePageChange("rides")}
-                      >
-                        Wróć do listy przejazdów
-                      </IonButton>
-                  </IonCol>
-                </IonRow>
-              )}
+              <IonRow>
+                <IonCol size="12" className="ion-text-center ion-padding">
+                  {ride.status === "w trakcie" && (
+                    <IonButton 
+                      color="success" 
+                      expand="block"
+                      size="large"
+                      onClick={handleCompleteRide}
+                    >
+                      Zakończ przejazd
+                    </IonButton>
+                  )}
+                  
+                  {ride.status === "zlecono" && (
+                    <IonButton 
+                      color="danger" 
+                      expand="block"
+                      size="large"
+                      onClick={handleCancelRide}
+                    >
+                      Anuluj przejazd
+                    </IonButton>
+                  )}
+
+                  {ride.status === "anulowany" && (
+                    <div className="ion-text-center ion-margin-vertical">
+                      <IonText color="danger">
+                        <p>Przejazd został anulowany. Za chwilę nastąpi przekierowanie...</p>
+                      </IonText>
+                    </div>
+                  )}
+
+                  {(ride.status === "zakończony" || ride.status === "zamknięty") && (
+                    <div className="ion-text-center ion-margin-vertical">
+                      <IonText color="medium">
+                        <p>Przejazd został zakończony.</p>
+                      </IonText>
+                    </div>
+                  )}
+
+                  <IonButton 
+                    color="medium" 
+                    expand="block"
+                    size="default"
+                    className="ion-margin-top"
+                    onClick={() => handlePageChange("rides")}
+                  >
+                    Wróć do listy przejazdów
+                  </IonButton>
+                </IonCol>
+              </IonRow>
             </IonGrid>
           )}
           
-          {/* Modal płatności */}
           <IonModal isOpen={showPaymentModal}>
             <IonHeader>
               <IonToolbar>
@@ -399,7 +500,6 @@ const RideDetail: React.FC<RideDetailProps> = ({
             </IonContent>
           </IonModal>
           
-          {/* Modal oceny */}
           <IonModal isOpen={showRatingModal}>
             <IonHeader>
               <IonToolbar>
@@ -416,27 +516,23 @@ const RideDetail: React.FC<RideDetailProps> = ({
               ) : (
                 <>
                   <h2 className="ion-text-center">Jak oceniasz przejazd?</h2>
-                  
                   <div className="rating-stars ion-text-center">
                     {renderStars()}
                   </div>
-                  
                   <IonItem className="ion-margin-top">
                     <IonLabel position="stacked">Dodaj komentarz (opcjonalnie)</IonLabel>
                     <IonTextarea
                       value={comment}
-                      onIonInput={e => setComment(e.detail.value || "")}
+                      onIonInput={(e) => setComment(e.detail.value || "")}
                       placeholder="Twój komentarz..."
                       rows={4}
                     />
                   </IonItem>
-                  
                   {ratingError && (
                     <IonText color="danger">
                       <p className="ion-text-center ion-padding-top">{ratingError}</p>
                     </IonText>
                   )}
-                  
                   <div className="ion-padding-top ion-text-center">
                     <IonButton onClick={handleSubmitRating}>
                       Wyślij ocenę
