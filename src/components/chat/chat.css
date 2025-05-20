@@ -1,0 +1,160 @@
+.chat-page, 
+.chat-list-page {
+  background: url('/assets/chat-background.png') no-repeat center center;
+  background-size: cover;
+}
+
+.chat-page ion-toolbar,
+
+.chat-list-page ion-toolbar {
+  --background: linear-gradient(135deg, #ff6100, #ff8c00);
+  --color: #ffffff;
+}
+
+.chat-page ion-content,
+.chat-list-page ion-content {
+  --background: transparent;
+}
+
+.chat-page ion-list,
+.chat-list-page ion-list,
+.chat-list-page ion-item {
+  background: transparent !important;
+}
+
+/* Karty na liście czatów */
+.chat-card {
+  --background: #1f1f1f;
+  margin: 12px 16px;
+  border-radius: 12px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+  transition: transform 0.1s;
+}
+.chat-card:hover {
+  transform: translateY(-2px);
+}
+.chat-card-title {
+  color: #ff8c00;
+  font-size: 1.1rem;
+  font-weight: bold;
+}
+.chat-ride-badge {
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 8px;
+  font-size: 1.1rem;
+  text-align: right;
+}
+.chat-card-date {
+  color: #888;
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+.no-chats {
+  text-align: center;
+  color: #888;
+  margin: 32px 0;
+}
+
+.chat-content {
+  padding: 16px;
+  gap: 5px;
+}
+.chat-bubble {
+  max-width: 50%;
+  padding: 8px 12px;
+  border-radius: 16px;
+  word-break: break-word;
+  margin: 6px 0;
+}
+.chat-bubble.mine {
+  background: #ff8c00;
+  color: #121212;
+  align-self: flex-start; 
+  margin-right: auto;     
+  border-bottom-left-radius: 2px;;
+}
+.chat-bubble.other {
+  background: #e8dfd5;
+  color: #121212;
+  align-self: flex-end;    
+  margin-left: auto;       
+  border-bottom-right-radius: 2px;
+}
+.bubble-meta {
+  font-size: 0.75rem;
+  color: #000000;
+  margin-top: 4px;
+}
+
+.chat-input-wrapper {
+  display: flex;
+  padding: 8px 16px;
+  background: #1f1f1f;
+}
+.chat-input {
+  flex: 1;
+  --background: #2e2e2e;
+  --color: #fafafa;
+  --padding-start: 14px;
+  --padding-end: 14px;
+  --placeholder-color: #bbb;
+  border-radius: 20px;
+  height: 44px;
+}
+
+.chat-input-wrapper {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(6px);
+  z-index: 10;
+}
+
+.chat-send-btn {
+  --background: #ff8c00;
+  --color: #ffffff;
+  border-radius: 20px;
+  margin-left: 8px;
+  min-width: 80px;
+  height: 44px;
+  font-weight: bold;
+}
+
+.chat-input:focus {
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+}
+
+.chat-send-btn:hover {
+  --background: #c85204;
+}
+
+/* Szerokość sidebaru */
+ion-menu {
+  --width: 240px;
+}
+
+.orange-bar {
+  --background: #ff6100;
+  --color: #ffffff;
+}
+
+.bubble-sender-name {
+  font-size: 0.75rem;
+  color: #aaa;
+  margin-top: 2px;
+  text-align: start;
+}
+
+.chat-bubble.admin {
+  background: #004080 !important;
+  color: #fff !important;
+  align-self: flex-start;
+  border-bottom-left-radius: 4px;
+}

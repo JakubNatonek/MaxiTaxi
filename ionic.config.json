@@ -1,0 +1,7 @@
+{
+  "name": "MaxiTaxi",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "react-vite"
+}

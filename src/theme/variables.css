@@ -1,0 +1,42 @@
+/* For information on how to create your own theme, please see:
+http://ionicframework.com/docs/theming/ */
+:root {
+    --ion-color-primary: #ff6600;
+    --ion-color-primary-rgb: 255, 102, 0;
+    --ion-color-dark: #121212;
+    --ion-background-color: var(--ion-color-dark);
+    --ion-text-color: #ffffff;
+    --ion-toolbar-background: var(--ion-color-primary);
+    --ion-color-custom-orange: #fe7f00;
+    --ion-color-custom-orange-rgb: 255, 165, 51;
+    --ion-color-custom-orange-contrast: #ffffff;
+    --ion-color-custom-grey: #232222;
+    --ion-color-custom-grey-rgb: 35, 34, 34;
+    --ion-color-custom-grey-contrast: #ffffff;
+    --ion-color-custom-grey-contrast-rgb: 255, 255, 255;
+    --ion-color-custom-grey-shade: #1f1f1f;
+    --ion-color-custom-grey-tint: #3a3a3a;
+  }
+
+.custom-toast {
+  --background: rgba(255,255,255,0.9);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  --min-height: 80px;
+  --font-size: 1rem;
+  color: #121212;
+}
+
+.custom-toast .toast-button {
+  --button-height: 24px;
+  --button-font-size: 0.75rem;
+  padding: 0 8px;
+}
+
+.custom-toast .toast-button:not([role="cancel"]) {
+  color: #121212;
+}
+
+.custom-toast .toast-button[role="cancel"] {
+  color: #121212;
+}
