@@ -39,7 +39,6 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ handlePageChange, contentId }) => {
-  const role = localStorage.getItem("role"); // Pobierz rolę użytkownika z localStorage
 
 const roleId = Number(localStorage.getItem("roleId"));
 
@@ -83,7 +82,6 @@ const roleId = Number(localStorage.getItem("roleId"));
   const handleLogout = () => {
     localStorage.removeItem("jwt");
     localStorage.removeItem("roleId");;
-    localStorage.removeItem("role");
     window.location.reload();
   };
 

@@ -44,15 +44,13 @@ interface AdminPanelProps {
   getEncryptedData: (endpoint: string) => Promise<any>;
 }
 
-const roles = ["admin", "kierowca", "pasazer"];
-
 const emptyUser: User = {
   imie: "",
   email: "",
   telefon: "",
-    rola_id: 2, // domyślnie pasażer
+  rola_id: 2, // domyślnie pasażer
 };
-    
+
 const AdminPanel: React.FC<AdminPanelProps> = ({
   sendEncryptedData,
   hashPassword,

@@ -160,7 +160,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ SERVER, onLoginStateChange, handl
           </IonRow>
         </IonGrid>
         <div className="log-bottom-image">
-        <img src="public/assets/login-dol.png" alt="Logowanie stopka" />
+          <img src="public/assets/login-dol.png" alt="Logowanie stopka" />
         </div>
       </IonContent>
     </IonApp>
