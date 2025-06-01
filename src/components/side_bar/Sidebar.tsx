@@ -27,6 +27,7 @@ import {
   logOutOutline,
   starOutline, 
   mapOutline,
+  carOutline,
 } from "ionicons/icons";
 
 import { jwtDecode } from "jwt-decode";
@@ -146,6 +147,10 @@ const roleId = Number(localStorage.getItem("roleId"));
               <IonItem button onClick={() => handlePageChange("AdminRidesPanel")}>
                 <IonIcon icon={personOutline} slot="start" />
                 <IonLabel>Zarządzanie przejazdami</IonLabel>
+              </IonItem>
+              <IonItem button onClick={() => handlePageChange("AdminDriversPanel")}>
+                <IonIcon icon={carOutline} slot="start" />
+                <IonLabel>Zarządzanie kierowcami</IonLabel>
               </IonItem>
             </>
           )}

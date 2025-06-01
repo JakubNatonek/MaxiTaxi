@@ -53,11 +53,11 @@ const DriverRanking: React.FC<DriverRankingProps> = ({ getEncryptedData }) => {
     const fetchDrivers = async () => {
       try {
         setIsLoading(true);
-        console.log('Rozpoczęcie pobierania danych kierowców...');
+        //console.log('Rozpoczęcie pobierania danych kierowców...');
         
         // Użycie getEncryptedData zamiast fetch
         const data = await getEncryptedData('api/ranking-kierowcow');
-        console.log('Pobrano dane kierowców:', data);
+        //console.log('Pobrano dane kierowców:', data);
         
         setDrivers(data);
       } catch (error) {
@@ -79,11 +79,11 @@ const DriverRanking: React.FC<DriverRankingProps> = ({ getEncryptedData }) => {
   const handleDriverClick = async (driver: Driver) => {
     setSelectedDriver(driver);
     try {
-      console.log(`Pobieranie recenzji dla kierowcy ${driver.id}...`);
+      //console.log(`Pobieranie recenzji dla kierowcy ${driver.id}...`);
       
       // Użycie getEncryptedData zamiast fetch
       const data = await getEncryptedData(`api/reviews/${driver.id}`);
-      console.log('Pobrano recenzje:', data);
+      //console.log('Pobrano recenzje:', data);
       
       setReviews(data);
       setShowModal(true);
