@@ -29,7 +29,7 @@ import Profile from "../profile/Profile";
 import AdminRidesPanel from "../AdminRidesPanel/AdminRidesPanel";
 import RideDetail from "../ride/RideDetail";
 import DriverRanking from "../Ranking/DriverRanking";
-import AdminDriversPanel from '../AdminDriversPanel/AdminDriversPanel';
+import AdminDriversPanel from '../AdminDriverPanel/AdminDriversPanel';
 import { io } from "socket.io-client";
 import { jwtDecode } from "jwt-decode";
 import { JwtPayload } from "../../JwtPayLoad";

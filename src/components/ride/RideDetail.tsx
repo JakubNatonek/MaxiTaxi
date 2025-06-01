@@ -552,13 +552,16 @@ const RideDetail: React.FC<RideDetailProps> = ({
                   </div>
                   <IonItem className="ion-margin-top">
                     <IonLabel position="stacked">
-                      Dodaj komentarz (opcjonalnie)
+                      Dodaj komentarz (opcjonalnie, max 100 znaków)
                     </IonLabel>
                     <IonTextarea
                       value={comment}
-                      onIonInput={(e) => setComment(e.detail.value || "")}
+                      onIonInput={(e) => setComment((e.detail.value || "").slice(0, 100))}
                       placeholder="Twój komentarz..."
-                      rows={4}
+                      rows={3}
+                      maxlength={100}
+                      counter={true}
+                      counterFormatter={(inputLength, maxLength) => `${inputLength}/${maxLength}`}
                     />
                   </IonItem>
                   {ratingError && (
