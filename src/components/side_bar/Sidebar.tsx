@@ -25,6 +25,7 @@ import {
   globeOutline,
   informationCircleOutline,
   logOutOutline,
+  starOutline, 
   mapOutline,
 } from "ionicons/icons";
 
@@ -78,6 +79,7 @@ const roleId = Number(localStorage.getItem("roleId"));
   const goToAdmin = () => handlePageChange("AdminPanel");
   const goToOrders = () => handlePageChange("driverOrders");
   const goToRides = () => handlePageChange("rides");
+  const goToDriverRanking = () => handlePageChange("DriverRanking");
 
   const handleLogout = () => {
     localStorage.removeItem("jwt");
@@ -110,6 +112,10 @@ const roleId = Number(localStorage.getItem("roleId"));
     </div>
       <IonList>
         <IonMenuToggle autoHide={false}>
+          <IonItem button onClick={goToDriverRanking}>
+            <IonIcon icon={starOutline} slot="start" />
+            <IonLabel>Ranking Kierowców</IonLabel>
+          </IonItem>
           <IonItem button onClick={goToRides}>
             <IonIcon icon={personOutline} slot="start" />
             <IonLabel>Przejazdy</IonLabel>
