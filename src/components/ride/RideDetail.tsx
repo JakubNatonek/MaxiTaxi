@@ -24,30 +24,22 @@ import {
   IonItem,
   IonLabel,
   IonList,
-  IonToast
+  IonToast,
 } from "@ionic/react";
 import { star, starOutline } from "ionicons/icons";
 import "leaflet/dist/leaflet.css";
 import polyline from "polyline";
 import L from "leaflet";
 import "./RideDetail.css";
-
-interface Order {
-  zlecenie_id: number;
-  cena: string;
-  data_zamowienia: string;
-  data_zakonczenia: string | null;
-  dystans_km: string;
-  kierowca_id: number;
-  kierowca_imie: string;
-  pasazer_id: number;
-  pasazer_imie: string;
-  status: string;
-  trasa_przejazdu: string;
-}
+import { Order } from "../../OrderInt";
+import PayPalButton from "../payments/PayPalButton";
 
 interface RideDetailProps {
-  sendEncryptedData: (endpoint: string, data: Record<string, unknown>, method?: string) => Promise<any>;
+  sendEncryptedData: (
+    endpoint: string,
+    data: Record<string, unknown>,
+    method?: string
+  ) => Promise<any>;
   getEncryptedData: (endpoint: string) => Promise<any>;
   rideId: number;
   handlePageChange: (page: string) => void;
@@ -57,7 +49,7 @@ const RideDetail: React.FC<RideDetailProps> = ({
   sendEncryptedData,
   getEncryptedData,
   rideId: rideIdProp,
-  handlePageChange
+  handlePageChange,
 }) => {
   // Stan podstawowy
   const [ride, setRide] = useState<Order | null>(null);
@@ -71,7 +63,7 @@ const RideDetail: React.FC<RideDetailProps> = ({
   const [ratingSuccess, setRatingSuccess] = useState<string | null>(null);
   const [statusChanged, setStatusChanged] = useState<boolean>(false);
   const [statusMessage, setStatusMessage] = useState<string | null>("");
-  
+
   // Referencje do mapy
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstance = useRef<L.Map | null>(null);
@@ -83,23 +75,23 @@ const RideDetail: React.FC<RideDetailProps> = ({
     if (!silentRefresh) {
       setIsLoading(true);
     }
-    
+
     try {
       const response = await getEncryptedData(`zlecenia`);
       const foundRide = response.find((r: Order) => r.zlecenie_id === rideId);
-      
-      if (foundRide) {       
+
+      if (foundRide) {
         setRide((prevRide) => {
-          if (prevRide && 
-              prevRide.status === foundRide.status && 
-              prevRide.cena === foundRide.cena &&
-              prevRide.dystans_km === foundRide.dystans_km) {
+          if (
+            prevRide &&
+            prevRide.status === foundRide.status &&
+            prevRide.cena === foundRide.cena &&
+            prevRide.dystans_km === foundRide.dystans_km
+          ) {
             return prevRide;
           }
           return foundRide;
         });
-        
-       
       } else {
         if (!silentRefresh) {
           setError("Nie znaleziono szczegółów przejazdu");
@@ -126,7 +118,7 @@ const RideDetail: React.FC<RideDetailProps> = ({
     const interval = setInterval(() => {
       fetchRideDetails(true);
     }, 5000);
-    
+
     return () => clearInterval(interval);
   }, [rideId]);
 
@@ -135,35 +127,41 @@ const RideDetail: React.FC<RideDetailProps> = ({
     if (mapRef.current && !mapInstance.current && ride) {
       setTimeout(() => {
         try {
-          const map = L.map(mapRef.current!).setView([50.049683, 19.944544], 12);
+          const map = L.map(mapRef.current!).setView(
+            [50.049683, 19.944544],
+            12
+          );
           L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-            attribution: "© OpenStreetMap contributors"
+            attribution: "© OpenStreetMap contributors",
           }).addTo(map);
-          
+
           mapInstance.current = map;
-          
+
           // Renderowanie trasy
           if (ride.trasa_przejazdu) {
             const decodedCoordinates = polyline.decode(ride.trasa_przejazdu);
             const routePoints = decodedCoordinates.map(
-              coord => [coord[0], coord[1]] as [number, number]
+              (coord) => [coord[0], coord[1]] as [number, number]
             );
-            
+
             if (routePoints.length > 0) {
-              const routeLine = L.polyline(routePoints, { color: 'blue', weight: 5 }).addTo(map);
-              
+              const routeLine = L.polyline(routePoints, {
+                color: "blue",
+                weight: 5,
+              }).addTo(map);
+
               const startPoint = routePoints[0];
               const endPoint = routePoints[routePoints.length - 1];
-              
+
               L.marker(startPoint, { title: "Miejsce startowe" })
                 .addTo(map)
                 .bindPopup("Miejsce startowe")
                 .openPopup();
-                
+
               L.marker(endPoint, { title: "Miejsce docelowe" })
                 .addTo(map)
                 .bindPopup("Miejsce docelowe");
-                
+
               map.fitBounds(routeLine.getBounds());
             }
           }
@@ -172,7 +170,7 @@ const RideDetail: React.FC<RideDetailProps> = ({
         }
       }, 500);
     }
-    
+
     return () => {
       if (mapInstance.current) {
         mapInstance.current.remove();
@@ -187,7 +185,7 @@ const RideDetail: React.FC<RideDetailProps> = ({
       const timer = setTimeout(() => {
         handlePageChange("map");
       }, 5000);
-      
+
       return () => clearTimeout(timer);
     }
   }, [ride?.status, handlePageChange]);
@@ -212,30 +210,26 @@ const RideDetail: React.FC<RideDetailProps> = ({
 
     try {
       setIsLoading(true);
-      
+
       await sendEncryptedData(
-        `zlecenia/${ride.zlecenie_id}/status`, 
+        `zlecenia/${ride.zlecenie_id}/status`,
         { status_id: 3 },
         "PUT"
       );
 
-      await sendEncryptedData(
-        "oceny", 
-        {
-          kierowca_id: ride.kierowca_id,
-          przejazd_id: ride.zlecenie_id,
-          ocena: rating,
-          komentarz: comment
-        }
-      );
+      await sendEncryptedData("oceny", {
+        kierowca_id: ride.kierowca_id,
+        przejazd_id: ride.zlecenie_id,
+        ocena: rating,
+        komentarz: comment,
+      });
 
       setRatingSuccess("Dziękujemy za ocenę!");
-      
+
       setTimeout(() => {
         setShowRatingModal(false);
         handlePageChange("map");
       }, 2000);
-      
     } catch (err) {
       setRatingError("Wystąpił błąd podczas zapisywania oceny");
     } finally {
@@ -248,19 +242,18 @@ const RideDetail: React.FC<RideDetailProps> = ({
 
     try {
       setIsLoading(true);
-      
+
       await sendEncryptedData(
-        `zlecenia/${ride.zlecenie_id}/status`, 
+        `zlecenia/${ride.zlecenie_id}/status`,
         { status_id: 4 },
-        "PUT"  
+        "PUT"
       );
 
       setRatingSuccess("Przejazd został anulowany.");
-      
+
       setTimeout(() => {
         handlePageChange("map");
       }, 2000);
-      
     } catch (err) {
       setRatingError("Wystąpił błąd podczas anulowania przejazdu");
     } finally {
@@ -276,7 +269,7 @@ const RideDetail: React.FC<RideDetailProps> = ({
         <IonIcon
           key={i}
           icon={i <= rating ? star : starOutline}
-          className={`rating-star ${i <= rating ? 'active' : ''}`}
+          className={`rating-star ${i <= rating ? "active" : ""}`}
           onClick={() => setRating(i)}
         />
       );
@@ -286,13 +279,17 @@ const RideDetail: React.FC<RideDetailProps> = ({
 
   useEffect(() => {
     if (ride && ride.status) {
-      const savedStatus = sessionStorage.getItem('lastRideStatus_' + ride.zlecenie_id);
-      
+      const savedStatus = sessionStorage.getItem(
+        "lastRideStatus_" + ride.zlecenie_id
+      );
+
       if (savedStatus === null) {
         // Pierwszy raz otwieramy ten przejazd - zapisz status bez pokazywania powiadomienia
-        sessionStorage.setItem('lastRideStatus_' + ride.zlecenie_id, ride.status);
-      } 
-      else if (savedStatus !== ride.status) {
+        sessionStorage.setItem(
+          "lastRideStatus_" + ride.zlecenie_id,
+          ride.status
+        );
+      } else if (savedStatus !== ride.status) {
         // Status się zmienił - pokaż powiadomienie
         let message = "";
         switch (ride.status) {
@@ -308,10 +305,13 @@ const RideDetail: React.FC<RideDetailProps> = ({
           default:
             message = `Status przejazdu: ${ride.status}`;
         }
-        
+
         setStatusMessage(message);
         setStatusChanged(true);
-        sessionStorage.setItem('lastRideStatus_' + ride.zlecenie_id, ride.status);
+        sessionStorage.setItem(
+          "lastRideStatus_" + ride.zlecenie_id,
+          ride.status
+        );
       }
     }
   }, [ride?.status, ride?.zlecenie_id]);
@@ -332,27 +332,37 @@ const RideDetail: React.FC<RideDetailProps> = ({
 
         <IonContent>
           <IonLoading isOpen={isLoading} message="Proszę czekać..." />
-          
+
           <IonToast
             isOpen={statusChanged}
             message={statusMessage || ""}
             duration={5000}
             position="top"
             color={
-              statusMessage?.includes("zaakceptowany") ? "success" : 
-              statusMessage?.includes("odrzucony") ? "danger" : 
-              statusMessage?.includes("zakończony") ? "tertiary" : "primary"
+              statusMessage?.includes("zaakceptowany")
+                ? "success"
+                : statusMessage?.includes("odrzucony")
+                ? "danger"
+                : statusMessage?.includes("zakończony")
+                ? "tertiary"
+                : "primary"
             }
             onDidDismiss={() => setStatusChanged(false)}
-            buttons={[{ 
-              text: 'OK', 
-              role: 'cancel',
-              handler: () => setStatusChanged(false) 
-            }]}
+            buttons={[
+              {
+                text: "OK",
+                role: "cancel",
+                handler: () => setStatusChanged(false),
+              },
+            ]}
             cssClass={`ride-status-toast ${
-              statusMessage?.includes("zaakceptowany") ? "toast-success" : 
-              statusMessage?.includes("odrzucony") ? "toast-danger" : 
-              statusMessage?.includes("zakończony") ? "toast-tertiary" : ""
+              statusMessage?.includes("zaakceptowany")
+                ? "toast-success"
+                : statusMessage?.includes("odrzucony")
+                ? "toast-danger"
+                : statusMessage?.includes("zakończony")
+                ? "toast-tertiary"
+                : ""
             }`}
             animated={true}
             mode="ios"
@@ -365,7 +375,7 @@ const RideDetail: React.FC<RideDetailProps> = ({
               </IonCardContent>
             </IonCard>
           )}
-          
+
           {ride && (
             <IonGrid className="ride-detail-container">
               <IonRow>
@@ -373,7 +383,7 @@ const RideDetail: React.FC<RideDetailProps> = ({
                   <h2 className="ride-title">Szczegóły przejazdu</h2>
                 </IonCol>
               </IonRow>
-              
+
               <IonCard>
                 <IonCardHeader>
                   <IonCardTitle>Informacje o przejeździe</IonCardTitle>
@@ -383,31 +393,35 @@ const RideDetail: React.FC<RideDetailProps> = ({
                     <IonItem>
                       <IonLabel>
                         <h2>Kierowca</h2>
-                        <p>{ride.kierowca_imie !== "NULL" ? ride.kierowca_imie : "Brak danych"}</p>
+                        <p>
+                          {ride.kierowca_imie !== "NULL"
+                            ? ride.kierowca_imie
+                            : "Brak danych"}
+                        </p>
                       </IonLabel>
                     </IonItem>
-                    
+
                     <IonItem>
                       <IonLabel>
                         <h2>Data zamówienia</h2>
                         <p>{new Date(ride.data_zamowienia).toLocaleString()}</p>
                       </IonLabel>
                     </IonItem>
-                    
+
                     <IonItem>
                       <IonLabel>
                         <h2>Dystans</h2>
                         <p>{parseFloat(ride.dystans_km).toFixed(2)} km</p>
                       </IonLabel>
                     </IonItem>
-                    
+
                     <IonItem>
                       <IonLabel>
                         <h2>Cena</h2>
                         <p>{parseFloat(ride.cena).toFixed(2)} zł</p>
                       </IonLabel>
                     </IonItem>
-                    
+
                     <IonItem>
                       <IonLabel>
                         <h2>Status</h2>
@@ -417,19 +431,19 @@ const RideDetail: React.FC<RideDetailProps> = ({
                   </IonList>
                 </IonCardContent>
               </IonCard>
-              
+
               <IonRow>
                 <IonCol size="12">
                   <h3 className="map-title">Trasa przejazdu</h3>
                   <div className="map-container" ref={mapRef}></div>
                 </IonCol>
               </IonRow>
-              
+
               <IonRow>
                 <IonCol size="12" className="ion-text-center ion-padding">
                   {ride.status === "w trakcie" && (
-                    <IonButton 
-                      color="success" 
+                    <IonButton
+                      color="success"
                       expand="block"
                       size="large"
                       onClick={handleCompleteRide}
@@ -437,10 +451,10 @@ const RideDetail: React.FC<RideDetailProps> = ({
                       Zakończ przejazd
                     </IonButton>
                   )}
-                  
+
                   {ride.status === "zlecono" && (
-                    <IonButton 
-                      color="danger" 
+                    <IonButton
+                      color="danger"
                       expand="block"
                       size="large"
                       onClick={handleCancelRide}
@@ -452,12 +466,16 @@ const RideDetail: React.FC<RideDetailProps> = ({
                   {ride.status === "anulowany" && (
                     <div className="ion-text-center ion-margin-vertical">
                       <IonText color="danger">
-                        <p>Przejazd został anulowany. Za chwilę nastąpi przekierowanie...</p>
+                        <p>
+                          Przejazd został anulowany. Za chwilę nastąpi
+                          przekierowanie...
+                        </p>
                       </IonText>
                     </div>
                   )}
 
-                  {(ride.status === "zakończony" || ride.status === "zamknięty") && (
+                  {(ride.status === "zakończony" ||
+                    ride.status === "zamknięty") && (
                     <div className="ion-text-center ion-margin-vertical">
                       <IonText color="medium">
                         <p>Przejazd został zakończony.</p>
@@ -465,8 +483,8 @@ const RideDetail: React.FC<RideDetailProps> = ({
                     </div>
                   )}
 
-                  <IonButton 
-                    color="medium" 
+                  <IonButton
+                    color="medium"
                     expand="block"
                     size="default"
                     className="ion-margin-top"
@@ -478,7 +496,7 @@ const RideDetail: React.FC<RideDetailProps> = ({
               </IonRow>
             </IonGrid>
           )}
-          
+
           <IonModal isOpen={showPaymentModal}>
             <IonHeader>
               <IonToolbar>
@@ -489,17 +507,30 @@ const RideDetail: React.FC<RideDetailProps> = ({
               <IonText>
                 <h2 className="ion-text-center">Płatności do implementacji</h2>
                 <p className="ion-text-center">
-                  W tym miejscu zostanie zaimplementowana obsługa płatności.
+                  {ride ? (
+                    <PayPalButton
+                      amount={parseFloat(ride.cena)}
+                      rideId={ride.zlecenie_id}
+                      sendEncryptedData={sendEncryptedData}
+                      onSuccess={(details) => {
+                        console.log("Payment completed successfully", details);
+                        handlePayment();
+                      }}
+                      onError={(error) => {
+                        console.error("Payment error", error);
+                      }}
+                    />
+                  ) : (
+                    <p>Ładowanie danych płatności...</p>
+                  )}
                 </p>
               </IonText>
               <div className="ion-padding-top ion-text-center">
-                <IonButton onClick={handlePayment}>
-                  Kontynuuj
-                </IonButton>
+                <IonButton onClick={handlePayment}>Kontynuuj</IonButton>
               </div>
             </IonContent>
           </IonModal>
-          
+
           <IonModal isOpen={showRatingModal}>
             <IonHeader>
               <IonToolbar>
@@ -520,7 +551,9 @@ const RideDetail: React.FC<RideDetailProps> = ({
                     {renderStars()}
                   </div>
                   <IonItem className="ion-margin-top">
-                    <IonLabel position="stacked">Dodaj komentarz (opcjonalnie)</IonLabel>
+                    <IonLabel position="stacked">
+                      Dodaj komentarz (opcjonalnie)
+                    </IonLabel>
                     <IonTextarea
                       value={comment}
                       onIonInput={(e) => setComment(e.detail.value || "")}
@@ -530,7 +563,9 @@ const RideDetail: React.FC<RideDetailProps> = ({
                   </IonItem>
                   {ratingError && (
                     <IonText color="danger">
-                      <p className="ion-text-center ion-padding-top">{ratingError}</p>
+                      <p className="ion-text-center ion-padding-top">
+                        {ratingError}
+                      </p>
                     </IonText>
                   )}
                   <div className="ion-padding-top ion-text-center">

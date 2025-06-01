@@ -2,6 +2,7 @@
   "name": "MaxiTaxi",
   "private": true,
   "version": "0.0.1",
+  "proxy": "http://localhost:8080",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -20,6 +21,7 @@
     "@capacitor/status-bar": "7.0.1",
     "@ionic/react": "^8.5.0",
     "@ionic/react-router": "^8.5.0",
+    "@paypal/react-paypal-js": "^8.8.3",
     "@types/react-router": "^5.1.20",
     "@types/react-router-dom": "^5.3.3",
     "dotenv": "^16.5.0",
@@ -29,6 +31,7 @@
     "polyline": "^0.2.0",
     "react": "19.0.0",
     "react-dom": "19.0.0",
+    "react-paypal-js": "^0.0.1-security",
     "react-router": "^5.3.4",
     "react-router-dom": "^5.3.4",
     "socket.io-client": "^4.8.1"

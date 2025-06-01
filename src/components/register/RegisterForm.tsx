@@ -151,7 +151,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ SERVER, onLoginStateChange,
           </IonRow>
         </IonGrid>
         <div className="register-bottom-image">
-        <img src="public/assets/login-dol.png" alt="Rejestracja stopka" />
+        <img src="/assets/login-dol.png" alt="Rejestracja stopka" />
         </div>
       </IonContent>
     </IonApp>

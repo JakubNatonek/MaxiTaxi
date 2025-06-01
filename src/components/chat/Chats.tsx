@@ -15,10 +15,16 @@ import {
 import { io } from "socket.io-client";
 import "./chat.css";
 
+import { jwtDecode } from "jwt-decode";
+import { JwtPayload } from "../../JwtPayLoad";
+
 interface ChatsProps {
   rideId: number;
   otherName: string;
-  sendEncryptedData:  (endpoint: string, data: Record<string, unknown>) => Promise<any>;
+  sendEncryptedData: (
+    endpoint: string,
+    data: Record<string, unknown>
+  ) => Promise<any>;
 }
 
 interface Message {
@@ -27,34 +33,52 @@ interface Message {
   timestamp: string;
 }
 
-const SERVER = import.meta.env.VITE_REACT_APP_API_URL || "http://localhost:8080";
+const SERVER =
+  import.meta.env.VITE_REACT_APP_API_URL;
 const socket = io(SERVER, { transports: ["websocket"] });
 
-const Chats: React.FC<ChatsProps> = ({ rideId, otherName, sendEncryptedData }) => {
+const Chats: React.FC<ChatsProps> = ({
+  rideId,
+  otherName,
+  sendEncryptedData,
+}) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  const getUserEmail = (): string | null => {
-    const token = localStorage.getItem("jwt");
-    if (!token) return null;
+  const token = localStorage.getItem("jwt");
+
+  let userEmail = null;
+  let userRole = null;
+  let userName = "";
+
+  if (token) {
     try {
-      const payload = JSON.parse(atob(token.split(".")[1]));
-      return payload.email;
-    } catch {
-      return null;
+      const decoded = jwtDecode<JwtPayload>(token);
+      // console.log(decoded);
+      userEmail = decoded.email;
+      userRole = decoded.roleId;
+      userName = userRole === 1 ? "Administrator" : "Ty";
+      // userType = decoded.userType;
+    } catch (err) {
+      console.error("Błąd dekodowania tokena:", err);
     }
-  };
-  const userEmail = getUserEmail();
+  }
 
   useEffect(() => {
     socket.on("chatHistory", (history: Message[]) => {
       setMessages(history);
-      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+      setTimeout(
+        () => bottomRef.current?.scrollIntoView({ behavior: "smooth" }),
+        50
+      );
     });
     socket.on("receiveMessage", (msg: Message) => {
-      setMessages(prev => [...prev, msg]);
-      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+      setMessages((prev) => [...prev, msg]);
+      setTimeout(
+        () => bottomRef.current?.scrollIntoView({ behavior: "smooth" }),
+        50
+      );
     });
 
     socket.emit("joinRoom", { rideId });
@@ -65,38 +89,73 @@ const Chats: React.FC<ChatsProps> = ({ rideId, otherName, sendEncryptedData }) =
     };
   }, [rideId]);
 
+  useEffect(() => {
+    // fetch historii:
+    fetch(`${SERVER}/chats/${rideId}/history`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((history) => {
+        setMessages(history);
+        setTimeout(
+          () => bottomRef.current?.scrollIntoView({ behavior: "smooth" }),
+          50
+        );
+      })
+      .catch((err) => console.error("fetch chat history:", err));
+
+    // dołącz do pokoju:
+    socket.emit("joinRoom", { rideId });
+
+    // nasłuchiwanie:
+    socket.on("receiveMessage", (msg: Message) => {
+      if (msg.senderEmail === userEmail) return;
+      setMessages((prev) => [...prev, msg]);
+      setTimeout(
+        () => bottomRef.current?.scrollIntoView({ behavior: "smooth" }),
+        50
+      );
+    });
+
+    return () => {
+      socket.off("receiveMessage");
+    };
+  }, [rideId, token, userEmail]);
+
   const sendMessage = () => {
     const text = input.trim();
     if (!text || !userEmail) return;
 
-    const ts = new Date()
-      .toISOString()
-      .slice(0, 19)
-      .replace("T", " ");
-
+    const ts = new Date().toISOString().slice(0, 19).replace("T", " ");
     const msg: Message = {
       senderEmail: userEmail,
       message: text,
       timestamp: ts,
     };
 
-    setMessages(prev => [...prev, msg]);
+    // od razu wyświetlamy lokalnie
+    setMessages((prev) => [...prev, msg]);
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
 
-    socket.emit("sendMessage", { rideId, senderEmail: userEmail, message: text });
+    // emitujemy przez socket, backend zapisze do bazy
+    socket.emit("sendMessage", {
+      rideId,
+      senderEmail: userEmail,
+      message: text,
+    });
 
     setInput("");
-    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
   };
 
   return (
-    <IonPage className="chat-page">
+     <IonPage className="chat-page">
       <IonHeader>
-        <IonToolbar className="orange-bar">
+        <IonToolbar className={userRole === 1 ? "toolbar-admin" : ""}>
           <IonButtons slot="start">
             <IonMenuButton />
           </IonButtons>
           <IonTitle>
-            {otherName}Czat przejazdu {rideId}
+            {otherName} — czat przejazdu #{rideId}
           </IonTitle>
         </IonToolbar>
       </IonHeader>
@@ -105,15 +164,18 @@ const Chats: React.FC<ChatsProps> = ({ rideId, otherName, sendEncryptedData }) =
         <IonList>
           {messages.map((msg, idx) => {
             const mine = msg.senderEmail === userEmail;
+            // wybór klasy dla bąbelka:
+            const bubbleClass = mine
+              ? (userRole === 1 ? "chat-bubble admin" : "chat-bubble mine")
+              : "chat-bubble other";
+
             return (
-              <IonItem
-                key={idx}
-                className={mine ? "chat-bubble mine" : "chat-bubble other"}
-              >
+              <IonItem key={idx} className={bubbleClass}>
                 <div>
                   <div>{msg.message}</div>
                   <div className="bubble-meta">
-                    {mine ? "Ty" : otherName} {msg.timestamp.slice(0,16).replace("T"," ")}
+                    {mine ? userName : otherName}{" "}
+                    {msg.timestamp.slice(0, 16).replace("T", " ")}
                   </div>
                 </div>
               </IonItem>
@@ -128,7 +190,7 @@ const Chats: React.FC<ChatsProps> = ({ rideId, otherName, sendEncryptedData }) =
           value={input}
           placeholder="Napisz wiadomość..."
           onIonChange={e => setInput(e.detail.value!)}
-          onKeyUp={e => { if (e.key === "Enter") sendMessage(); }}
+          onKeyUp={e => e.key === "Enter" && sendMessage()}
           className="chat-input"
         />
         <IonButton

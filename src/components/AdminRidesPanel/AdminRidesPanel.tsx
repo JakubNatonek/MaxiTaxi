@@ -321,7 +321,7 @@ const AdminRidesPanel: React.FC<AdminRidesPanelProps> = ({ getEncryptedData, sen
             <IonMenuButton />
           </IonButtons>
           <IonTitle className="toolbar-logo-title">
-            <img src="public/assets/menu_logo.png" alt="MaxiTaxi Logo" />
+            <img src="/assets/menu_logo.png" alt="MaxiTaxi Logo" />
           </IonTitle>
         </IonToolbar>
       </IonHeader>

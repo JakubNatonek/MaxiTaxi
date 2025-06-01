@@ -114,10 +114,6 @@ const roleId = Number(localStorage.getItem("roleId"));
             <IonIcon icon={personOutline} slot="start" />
             <IonLabel>Przejazdy</IonLabel>
           </IonItem>
-          <IonItem button>
-            <IonIcon icon={walletOutline} slot="start" />
-            <IonLabel>Portfel</IonLabel>
-          </IonItem>
           <IonItem button onClick={goToPayments}>
             <IonIcon icon={cardOutline} slot="start" />
             <IonLabel>Płatności</IonLabel>
@@ -129,10 +125,6 @@ const roleId = Number(localStorage.getItem("roleId"));
           <IonItem button onClick={goToChatList}>
             <IonIcon icon={peopleOutline} slot="start" />
             <IonLabel>Czaty</IonLabel>
-          </IonItem>
-          <IonItem button>
-            <IonIcon icon={informationCircleOutline} slot="start" />
-            <IonLabel>O Nas</IonLabel>
           </IonItem>
           <IonItem button onClick={() => handlePageChange("profile")}>
             <IonIcon icon={personOutline} slot="start" />

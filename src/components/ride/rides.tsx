@@ -182,7 +182,7 @@ const Rides: React.FC<RidesProps> = ({
               <IonMenuButton />
             </IonButtons>
             <IonTitle className="toolbar-logo-title">
-              <img src="public/assets/menu_logo.png" alt="MaxiTaxi Logo" />
+              <img src="/assets/menu_logo.png" alt="MaxiTaxi Logo" />
             </IonTitle>
           </IonToolbar>
         </IonHeader>
@@ -215,6 +215,9 @@ const Rides: React.FC<RidesProps> = ({
                       </p>
                       <p>
                         <strong>Status:</strong> {order.status}
+                      </p>
+                      <p>
+                        <strong>Stan Płatności:</strong> {order.status}
                       </p>
                     </div>
                   </IonCardHeader>

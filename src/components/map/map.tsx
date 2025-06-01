@@ -23,6 +23,9 @@ import polyline from "polyline";
 import L, { map } from "leaflet";
 import "./map.css";
 import BookingMenu from "./BookingMenu";
+import { jwtDecode } from "jwt-decode";
+import { JwtPayload } from "../../JwtPayLoad";
+import { Order } from "../../OrderInt";
 
 const SERVER = import.meta.env.VITE_REACT_APP_API_URL || "";
 
@@ -35,12 +38,14 @@ interface MapComponentProps {
   ) => Promise<any>;
   getEncryptedData: (endpoint: string) => Promise<any>;
   handlePageChange?: (page: string, params?: any) => void;
+  orders: Order[]; // Opcjonalna lista zamówień
 }
 
 const MapComponent2: React.FC<MapComponentProps> = ({
   sendEncryptedData,
   getEncryptedData,
-  handlePageChange = () => {}
+  handlePageChange = () => {},
+  orders,
 }) => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [userLocation, setUserLocation] = useState<{
@@ -74,7 +79,6 @@ const MapComponent2: React.FC<MapComponentProps> = ({
   const [routeData, setRouteData] = useState<any>(null);
   const userMarkerRef = useRef<L.CircleMarker | null>(null);
 
-  
   const mapRef = useRef<HTMLDivElement | null>(null); // Correct typing for mapRef
   const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
 
@@ -99,6 +103,48 @@ const MapComponent2: React.FC<MapComponentProps> = ({
       document.removeEventListener("click", handleClickOutside, true);
     };
   }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem("jwt");
+
+    let userRole = null;
+    let userName = "";
+
+    if (token) {
+      try {
+        const decoded = jwtDecode<JwtPayload>(token);
+        // console.log(decoded);
+        userRole = decoded.roleId;
+        if (userRole == 3) {
+          setShowSearch(false);
+          // Find active order (status "w trakcie" = 2)
+          const activeOrder = orders.find(
+            (order) => order.status === "w trakcie"
+          );
+
+          if (activeOrder && activeOrder.trasa_przejazdu) {
+            // Decode the polyline to get coordinates
+            const decodedCoordinates = polyline.decode(
+              activeOrder.trasa_przejazdu
+            );
+            if (decodedCoordinates.length > 0) {
+              // Get the first point from the route
+              const firstPoint = decodedCoordinates[0];
+
+              // Set as destination location
+              setDestinationLocation({
+                lat: firstPoint[0], // Latitude
+                lng: firstPoint[1], // Longitude
+              });
+            }
+          }
+        }
+        // userType = decoded.userType;
+      } catch (err) {
+        console.error("Błąd dekodowania tokena:", err);
+      }
+    }
+  }, [orders]);
 
   useEffect(() => {
     getUserLocation();
@@ -138,7 +184,7 @@ const MapComponent2: React.FC<MapComponentProps> = ({
   useEffect(() => {
     const debounceTimeout = setTimeout(() => {
       searchLocation();
-    }, 500); // Debounced for 500ms
+    }, 1000); // Debounced for 500ms
 
     return () => clearTimeout(debounceTimeout);
   }, [searchQuery]);
@@ -146,10 +192,10 @@ const MapComponent2: React.FC<MapComponentProps> = ({
   const searchLocation = async () => {
     if (searchQuery.trim()) {
       setLoading(true);
+      // const url = `https://nominatim.openstreetmap.org/search?format=json&q=Warsaw&countrycodes=PL`
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${searchQuery}&countrycodes=PL`;
       try {
-        const response = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${searchQuery}&countrycodes=PL`
-        );
+        const response = await fetch(url);
         const data = await response.json();
         if (data.length > 0) {
           setSearchData(data); // Store search results
@@ -214,7 +260,6 @@ const MapComponent2: React.FC<MapComponentProps> = ({
 
   // leaflet
   //polyline
-
 
   useEffect(() => {
     if (mapRef.current && userLocation && !mapInstance) {
@@ -342,7 +387,7 @@ const MapComponent2: React.FC<MapComponentProps> = ({
               <IonMenuButton />
             </IonButtons>
             <IonTitle className="toolbar-logo-title">
-              <img src="public/assets/menu_logo.png" alt="MaxiTaxi Logo" />
+              <img src="/assets/menu_logo.png" alt="MaxiTaxi Logo" />
             </IonTitle>
           </IonToolbar>
         </IonHeader>
@@ -353,7 +398,7 @@ const MapComponent2: React.FC<MapComponentProps> = ({
               {showSearch && (
                 <IonSearchbar
                   class="custom-searchbar"
-                  debounce={500}
+                  debounce={1000}
                   onIonInput={handleInput}
                   ref={searchbarRef}
                   onClick={() => setLocationListVisible(true)}
@@ -395,7 +440,7 @@ const MapComponent2: React.FC<MapComponentProps> = ({
           >
             Wyznacz Trasę
           </IonButton>
-          {alowBooking && (
+          {alowBooking && showSearch && (
             <IonButton
               onClick={() => {
                 console.log(showBooking);
