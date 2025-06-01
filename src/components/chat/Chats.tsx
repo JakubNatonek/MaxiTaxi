@@ -33,8 +33,7 @@ interface Message {
   timestamp: string;
 }
 
-const SERVER =
-  import.meta.env.VITE_REACT_APP_API_URL;
+const SERVER = import.meta.env.VITE_REACT_APP_API_URL;
 const socket = io(SERVER, { transports: ["websocket"] });
 
 const Chats: React.FC<ChatsProps> = ({
@@ -45,6 +44,8 @@ const Chats: React.FC<ChatsProps> = ({
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  const KEY = import.meta.env.VITE_REACT_APP_SECRET_KEY || "";
 
   const token = localStorage.getItem("jwt");
 
@@ -65,7 +66,156 @@ const Chats: React.FC<ChatsProps> = ({
     }
   }
 
-  useEffect(() => {
+  // useEffect(() => {
+  //   socket.on("chatHistory", (history: Message[]) => {
+  //     setMessages(history);
+  //     setTimeout(
+  //       () => bottomRef.current?.scrollIntoView({ behavior: "smooth" }),
+  //       50
+  //     );
+  //   });
+  //   socket.on("receiveMessage", (msg: Message) => {
+  //     setMessages((prev) => [...prev, msg]);
+  //     setTimeout(
+  //       () => bottomRef.current?.scrollIntoView({ behavior: "smooth" }),
+  //       50
+  //     );
+  //   });
+
+  //   socket.emit("joinRoom", { rideId });
+
+  //   return () => {
+  //     socket.off("chatHistory");
+  //     socket.off("receiveMessage");
+  //   };
+  // }, [rideId]);
+
+  async function generateKey(): Promise<CryptoKey> {
+    return crypto.subtle.importKey(
+      "raw",
+      new TextEncoder().encode(KEY), // 16 bajtów
+      { name: "AES-CBC" },
+      false,
+      ["encrypt", "decrypt"]
+    );
+  }
+
+  async function decryptData(
+    iv: number[],
+    encryptedData: number[]
+  ): Promise<any> {
+    const ivBuffer = new Uint8Array(iv);
+    const encryptedBuffer = new Uint8Array(encryptedData);
+    const key = await generateKey();
+    const decrypted = await crypto.subtle.decrypt(
+      {
+        name: "AES-CBC",
+        iv: ivBuffer,
+      },
+      key,
+      encryptedBuffer
+    );
+
+    const decoder = new TextDecoder();
+    const decryptedText = decoder.decode(decrypted);
+    return JSON.parse(decryptedText);
+  }
+
+  // useEffect(() => {
+  //   // fetch historii:
+  //   fetch(`${SERVER}/chats/${rideId}/history`, {
+  //     headers: { Authorization: `Bearer ${token}` },
+  //   })
+  //     .then((r) => r.json())
+  //     .then((history) => {
+  //       setMessages(history);
+
+  //       if (
+  //         history &&
+  //         Array.isArray(history.iv) &&
+  //         Array.isArray(history.data)
+  //       ) {
+  //         console.log( decryptData(history.iv, history.data));
+  //       }
+  //       setTimeout(
+  //         () => bottomRef.current?.scrollIntoView({ behavior: "smooth" }),
+  //         50
+  //       );
+  //     })
+  //     .catch((err) => console.error("fetch chat history:", err));
+
+  //   // dołącz do pokoju:
+  //   socket.emit("joinRoom", { rideId });
+
+  //   // nasłuchiwanie:
+  //   socket.on("receiveMessage", (msg: Message) => {
+  //     if (msg.senderEmail === userEmail) return;
+  //     setMessages((prev) => [...prev, msg]);
+  //     setTimeout(
+  //       () => bottomRef.current?.scrollIntoView({ behavior: "smooth" }),
+  //       50
+  //     );
+  //   });
+
+  //   return () => {
+  //     socket.off("receiveMessage");
+  //   };
+  // }, [rideId, token, userEmail]);
+
+
+    useEffect(() => {
+    // Pobieranie historii wiadomości
+    const fetchChatHistory = async () => {
+      setMessages([]);
+      // setIsLoading(true);
+      try {
+        const response = await fetch(`${SERVER}/chats/${rideId}/history`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        
+        const history = await response.json();
+        
+        if (history && Array.isArray(history.iv) && Array.isArray(history.data)) {
+          // Odszyfruj dane
+          const decryptedHistory = await decryptData(history.iv, history.data);
+          if (decryptedHistory && Array.isArray(decryptedHistory)) {
+            setMessages(decryptedHistory);
+            console.log(decryptedHistory)
+          } else {
+            console.error("Niepoprawny format odszyfrowanych danych");
+          }
+        } else if (Array.isArray(history)) {
+          // W przypadku gdy dane nie są zaszyfrowane
+          setMessages(history);
+        } else {
+          console.error("Niepoprawny format danych historii");
+        }
+      } catch (err) {
+        console.error("Błąd podczas pobierania historii czatu:", err);
+      } finally {
+        // setIsLoading(false);
+        setTimeout(
+          () => bottomRef.current?.scrollIntoView({ behavior: "smooth" }),
+          100
+        );
+      }
+    };
+
+    fetchChatHistory();
+
+    // Dołącz do pokoju czatu
+    socket.emit("joinRoom", { rideId });
+
+    // Nasłuchiwanie nowych wiadomości
+    socket.on("receiveMessage", (msg: Message) => {
+      setMessages((prev) => [...prev, msg]);
+      setTimeout(
+        () => bottomRef.current?.scrollIntoView({ behavior: "smooth" }),
+        50
+      );
+    });
+
+    // Nasłuchiwanie aktualizacji historii
     socket.on("chatHistory", (history: Message[]) => {
       setMessages(history);
       setTimeout(
@@ -73,54 +223,12 @@ const Chats: React.FC<ChatsProps> = ({
         50
       );
     });
-    socket.on("receiveMessage", (msg: Message) => {
-      setMessages((prev) => [...prev, msg]);
-      setTimeout(
-        () => bottomRef.current?.scrollIntoView({ behavior: "smooth" }),
-        50
-      );
-    });
-
-    socket.emit("joinRoom", { rideId });
 
     return () => {
+      socket.off("receiveMessage");
       socket.off("chatHistory");
-      socket.off("receiveMessage");
     };
-  }, [rideId]);
-
-  useEffect(() => {
-    // fetch historii:
-    fetch(`${SERVER}/chats/${rideId}/history`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => r.json())
-      .then((history) => {
-        setMessages(history);
-        setTimeout(
-          () => bottomRef.current?.scrollIntoView({ behavior: "smooth" }),
-          50
-        );
-      })
-      .catch((err) => console.error("fetch chat history:", err));
-
-    // dołącz do pokoju:
-    socket.emit("joinRoom", { rideId });
-
-    // nasłuchiwanie:
-    socket.on("receiveMessage", (msg: Message) => {
-      if (msg.senderEmail === userEmail) return;
-      setMessages((prev) => [...prev, msg]);
-      setTimeout(
-        () => bottomRef.current?.scrollIntoView({ behavior: "smooth" }),
-        50
-      );
-    });
-
-    return () => {
-      socket.off("receiveMessage");
-    };
-  }, [rideId, token, userEmail]);
+  }, [rideId, token]);
 
   const sendMessage = () => {
     const text = input.trim();
@@ -148,7 +256,7 @@ const Chats: React.FC<ChatsProps> = ({
   };
 
   return (
-     <IonPage className="chat-page">
+    <IonPage className="chat-page">
       <IonHeader>
         <IonToolbar className={userRole === 1 ? "toolbar-admin" : ""}>
           <IonButtons slot="start">
@@ -166,7 +274,9 @@ const Chats: React.FC<ChatsProps> = ({
             const mine = msg.senderEmail === userEmail;
             // wybór klasy dla bąbelka:
             const bubbleClass = mine
-              ? (userRole === 1 ? "chat-bubble admin" : "chat-bubble mine")
+              ? userRole === 1
+                ? "chat-bubble admin"
+                : "chat-bubble mine"
               : "chat-bubble other";
 
             return (
@@ -189,8 +299,8 @@ const Chats: React.FC<ChatsProps> = ({
         <IonInput
           value={input}
           placeholder="Napisz wiadomość..."
-          onIonChange={e => setInput(e.detail.value!)}
-          onKeyUp={e => e.key === "Enter" && sendMessage()}
+          onIonInput={(e) => setInput(e.detail.value!)}
+          onKeyUp={(e) => e.key === "Enter" && sendMessage()}
           className="chat-input"
         />
         <IonButton
