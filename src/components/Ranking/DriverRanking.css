@@ -1,0 +1,83 @@
+.star-icon {
+  margin-right: 2px;
+  font-size: 18px;
+}
+
+.rating-container {
+  display: flex;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.stars-container {
+  display: flex;
+  align-items: center;
+  margin-right: 8px;
+}
+
+.rating-text {
+  color: var(--ion-color-medium);
+  margin: 0;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  padding: 40px;
+}
+
+.review-item {
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --padding-top: 12px;
+  --padding-bottom: 12px;
+}
+
+.review-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.review-rating {
+  display: flex;
+}
+
+.review-text {
+  margin-top: 8px;
+  white-space: normal;
+}
+
+.review-date {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--ion-color-medium);
+}
+
+.error-hint {
+  font-size: 12px;
+  color: var(--ion-color-danger);
+  margin-top: 8px;
+  font-style: italic;
+}
+
+.no-drivers-message {
+  text-align: center;
+  padding: 20px;
+}
+
+
+.toolbar-logo-title {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+
+.toolbar-logo-title img {
+  height: 30px;
+  margin: 0 auto;
+}
