@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   IonApp,
   IonContent,
@@ -6,7 +6,6 @@ import {
   IonRouterOutlet,
   setupIonicReact,
 } from "@ionic/react";
-
 
 import "./theme/variables.css";
 import "@ionic/react/css/core.css";
@@ -23,13 +22,6 @@ declare module "jwt-decode" {
   export default function jwtDecode<T>(token: string): T;
 }
 
-// interface JwtPayload {
-//   id: number        // id
-//   userType: string; // Rola użytkownika
-//   email: string;    // Adres e-mail użytkownika
-//   exp: number;      // Czas wygaśnięcia tokena (opcjonalnie)
-// }
-
 import { JwtPayload } from "./JwtPayLoad";
 setupIonicReact();
 
@@ -38,20 +30,161 @@ const App: React.FC = () => {
   const SERVER = import.meta.env.VITE_REACT_APP_API_URL || "";
   const SALT = import.meta.env.VITE_REACT_APP_SALT || "";
   const KEY = import.meta.env.VITE_REACT_APP_SECRET_KEY || "";
+  
   const handlePageChange = (page: string) => {
     setCurrentPage(page);
   };
 
-  const token = localStorage.getItem("jwt");
-  if (token) {
+  // Funkcja do wylogowywania
+  const logout = () => {
+    localStorage.removeItem("jwt");
+    localStorage.removeItem("roleId");
+    setCurrentPage("Autentication");
+  };
+  
+  // Sprawdź czy token jest ważny
+  const isTokenValid = () => {
+    const token = localStorage.getItem("jwt");
+    if (!token) return false;
+    
     try {
       const decoded = jwtDecode<JwtPayload>(token);
-      localStorage.setItem("roleId", String(decoded.roleId));
+      const currentTime = Date.now() / 1000; // Konwersja na sekundy
+      return decoded.exp > currentTime;
     } catch (e) {
-      localStorage.removeItem("roleId");
+      return false;
     }
-  }
+  };
   
+  // Funkcja do odświeżenia tokenu
+  const refreshToken = async () => {
+    try {
+      const currentToken = localStorage.getItem("jwt");
+      if (!currentToken) return;
+      
+      console.log(`[${new Date().toLocaleTimeString()}] Próba odświeżenia tokenu...`);
+      
+      const response = await fetch(`${SERVER}/refresh-token`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${currentToken}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.token) {
+          localStorage.setItem("jwt", data.token);
+          
+          // Aktualizuj roleId z nowego tokenu
+          const decoded = jwtDecode<JwtPayload>(data.token);
+          localStorage.setItem("roleId", String(decoded.roleId));
+          
+          //console.log(`[${new Date().toLocaleTimeString()}] Token został odświeżony, wygaśnie za ${Math.round((decoded.exp*1000 - Date.now())/60000)} minut`);
+        }
+      } else {
+        // Jeśli nie udało się odświeżyć tokenu, wyloguj
+        //console.log(`[${new Date().toLocaleTimeString()}] Nie udało się odświeżyć tokenu - status ${response.status}`);
+        logout();
+      }
+    } catch (error) {
+      //console.error(`[${new Date().toLocaleTimeString()}] Błąd podczas odświeżania tokenu:`, error);
+      logout();
+    }
+  };
+
+  // Sprawdza co 5 minut czy token jest ważny i odświeża go jeśli potrzeba
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const token = localStorage.getItem("jwt");
+      if (!token) return;
+      
+      try {
+        const decoded = jwtDecode<JwtPayload>(token);
+        const expirationTime = decoded.exp; // sekundy
+        const currentTime = Date.now() / 1000; // konwersja na sekundy
+        
+        // Jeśli token wygasł - wyloguj
+        if (currentTime >= expirationTime) {
+          //console.log("Token wygasł. Wylogowanie...");
+          logout();
+        } 
+        // Jeśli zostało mniej niż 10 minut - odśwież
+        else if (expirationTime - currentTime < 10 * 60) {
+          //console.log("Token wkrótce wygaśnie. Odświeżanie...");
+          refreshToken();
+        }
+      } catch (e) {
+        //console.error("Błąd podczas sprawdzania tokenu:", e);
+        logout();
+      }
+    }, 5 * 60 * 1000); // sprawdzaj co 5 minut
+    
+    return () => clearInterval(interval);
+  }, []);
+  
+  // Nasłuchuj aktywności użytkownika
+  useEffect(() => {
+    const handleActivity = () => {
+      const token = localStorage.getItem("jwt");
+      if (!token) return;
+      
+      try {
+        const decoded = jwtDecode<JwtPayload>(token);
+        const expirationTime = decoded.exp; // sekundy
+        const currentTime = Date.now() / 1000; // konwersja na sekundy
+        
+        // Jeśli zostało mniej niż 10 minut - odśwież
+        if (expirationTime - currentTime < 10 * 60) {
+          refreshToken();
+        }
+      } catch (e) {
+        console.error("Błąd podczas sprawdzania tokenu:", e);
+        logout();
+      }
+    };
+    
+    // Dodaj nasłuchiwanie na wydarzenia interakcji z debounce
+    let timeout: number | null = null;
+    const debouncedActivity = () => {
+      if (timeout) clearTimeout(timeout);
+      timeout = window.setTimeout(handleActivity, 2000);
+    };
+    
+    window.addEventListener('click', debouncedActivity);
+    window.addEventListener('touchstart', debouncedActivity);
+    window.addEventListener('keypress', debouncedActivity);
+    window.addEventListener('scroll', debouncedActivity);
+    
+    return () => {
+      if (timeout) clearTimeout(timeout);
+      window.removeEventListener('click', debouncedActivity);
+      window.removeEventListener('touchstart', debouncedActivity);
+      window.removeEventListener('keypress', debouncedActivity);
+      window.removeEventListener('scroll', debouncedActivity);
+    };
+  }, []);
+  
+  // Sprawdza token przy starcie aplikacji
+  useEffect(() => {
+    const token = localStorage.getItem("jwt");
+    if (token) {
+      if (isTokenValid()) {
+        try {
+          const decoded = jwtDecode<JwtPayload>(token);
+          localStorage.setItem("roleId", String(decoded.roleId));
+          setCurrentPage("MainView"); // Automatycznie przejdź do widoku głównego
+        } catch (e) {
+          localStorage.removeItem("roleId");
+          logout();
+        }
+      } else {
+        // Token wygasł, wyloguj
+        logout();
+      }
+    }
+  }, []);
 
   async function generateKey(): Promise<CryptoKey> {
     return crypto.subtle.importKey(
@@ -76,14 +209,21 @@ const App: React.FC = () => {
 
   const sendEncryptedData = async (endpoint: string, data: Record<string, unknown>, method: string = "POST") => {
     try {
+      // Sprawdź, czy token jest ważny przed wysłaniem żądania
+      if (!isTokenValid() && endpoint !== "login" && endpoint !== "register") {
+        logout();
+        throw new Error("Token wygasł. Wylogowano.");
+      }
+      
       const payload = { ...data };
       const encrypted = await encryptData(payload);
+      const token = localStorage.getItem("jwt");
       
       const response = await fetch(`${SERVER}/${endpoint}`, {
         method: method,
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
+          "Authorization": token ? `Bearer ${token}` : ""
         },
         body: JSON.stringify(encrypted)
       });
@@ -91,8 +231,13 @@ const App: React.FC = () => {
       // Pobierz Content-Type przed odczytaniem ciała odpowiedzi
       const contentType = response.headers.get("content-type");
       
+      // Sprawdź czy wystąpił błąd autoryzacji (401)
+      if (response.status === 401) {
+        logout();
+        throw new Error("Sesja wygasła. Zaloguj się ponownie.");
+      }
+      
       if (!response.ok) {
-        // Obsługa błędu - odczytaj odpowiedź tylko raz
         let errorMessage;
         
         if (contentType && contentType.includes("application/json")) {
@@ -138,6 +283,12 @@ const App: React.FC = () => {
 
   async function getEncryptedData(endpoint: string): Promise<any> {
     try {
+      // Sprawdź, czy token jest ważny przed wysłaniem żądania
+      if (!isTokenValid() && endpoint !== "login" && endpoint !== "register") {
+        logout();
+        throw new Error("Token wygasł. Wylogowano.");
+      }
+      
       const token = localStorage.getItem("jwt");
       const response = await fetch(`${SERVER}/${endpoint}`, {
         method: "GET",
@@ -146,6 +297,12 @@ const App: React.FC = () => {
           Authorization: token ? `Bearer ${token}` : "",
         },
       });
+      
+      // Sprawdź czy wystąpił błąd autoryzacji (401)
+      if (response.status === 401) {
+        logout();
+        throw new Error("Sesja wygasła. Zaloguj się ponownie.");
+      }
   
       if (!response.ok) {
         let errJson = null;
@@ -169,7 +326,6 @@ const App: React.FC = () => {
       throw err;
     }
   }
-  
 
   return (
     <IonApp>
@@ -190,7 +346,6 @@ const App: React.FC = () => {
           />}
         </IonContent>
       </IonPage>
-
     </IonApp>
   );
 };
