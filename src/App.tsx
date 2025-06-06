@@ -186,6 +186,40 @@ const App: React.FC = () => {
     }
   }, []);
 
+  // Dodaj obsługę wznowienia działania aplikacji
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Aplikacja jest znowu widoczna - sprawdź token
+        const token = localStorage.getItem("jwt");
+        if (token) {
+          try {
+            const decoded = jwtDecode<JwtPayload>(token);
+            const currentTime = Date.now() / 1000;
+            
+            if (decoded.exp <= currentTime) {
+              // Token wygasł podczas nieaktywności
+              console.log("Token wygasł podczas nieaktywności. Wylogowuję...");
+              logout();
+            } else if (decoded.exp - currentTime < 10 * 60) {
+              // Token wkrótce wygaśnie
+              console.log("Token wkrótce wygaśnie po przywróceniu aplikacji. Odświeżam...");
+              refreshToken();
+            }
+          } catch (e) {
+            logout();
+          }
+        }
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+  
   async function generateKey(): Promise<CryptoKey> {
     return crypto.subtle.importKey(
       "raw",
