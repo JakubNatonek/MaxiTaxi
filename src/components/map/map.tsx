@@ -26,6 +26,7 @@ import BookingMenu from "./BookingMenu";
 import { jwtDecode } from "jwt-decode";
 import { JwtPayload } from "../../JwtPayLoad";
 import { Order } from "../../OrderInt";
+import { Driver } from "../../Driver";
 
 const SERVER = import.meta.env.VITE_REACT_APP_API_URL || "";
 
@@ -39,6 +40,7 @@ interface MapComponentProps {
   getEncryptedData: (endpoint: string) => Promise<any>;
   handlePageChange?: (page: string, params?: any) => void;
   orders: Order[]; // Opcjonalna lista zamówień
+  drivers: Driver[];
 }
 
 const MapComponent2: React.FC<MapComponentProps> = ({
@@ -46,6 +48,7 @@ const MapComponent2: React.FC<MapComponentProps> = ({
   getEncryptedData,
   handlePageChange = () => {},
   orders,
+  drivers,
 }) => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [userLocation, setUserLocation] = useState<{
@@ -78,9 +81,29 @@ const MapComponent2: React.FC<MapComponentProps> = ({
   const [alowBooking, setAlowBooking] = useState(false);
   const [routeData, setRouteData] = useState<any>(null);
   const userMarkerRef = useRef<L.CircleMarker | null>(null);
+  const driverMarkersRef = useRef<L.Marker[]>([]);
+  const driverMarkerRef = useRef<L.Marker | null>(null);
 
   const mapRef = useRef<HTMLDivElement | null>(null); // Correct typing for mapRef
   const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
+
+  const token = localStorage.getItem("jwt");
+  let myEmail = null;
+  let userRole = null;
+  let userName = "";
+
+  if (token) {
+    try {
+      const decoded = jwtDecode<JwtPayload>(token);
+      // console.log(decoded);
+      myEmail = decoded.email;
+      userRole = decoded.roleId;
+      userName = userRole === 1 ? "Administrator" : "Ty";
+      // userType = decoded.userType;
+    } catch (err) {
+      console.error("Błąd dekodowania tokena:", err);
+    }
+  }
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -105,44 +128,66 @@ const MapComponent2: React.FC<MapComponentProps> = ({
   }, []);
 
   useEffect(() => {
-    const token = localStorage.getItem("jwt");
-
-    let userRole = null;
-    let userName = "";
-
-    if (token) {
-      try {
-        const decoded = jwtDecode<JwtPayload>(token);
-        // console.log(decoded);
-        userRole = decoded.roleId;
+    try {
+      const activeOrder = orders.find((order) => order.status === "w trakcie");
+      if (userRole == 3) {
+        setShowSearch(false);
+      }
+      if (activeOrder && activeOrder.trasa_przejazdu) {
+        setShowSearch(false);
+        // Decode the polyline to get coordinates
+        const decodedCoordinates = polyline.decode(activeOrder.trasa_przejazdu);
         if (userRole == 3) {
-          setShowSearch(false);
-          // Find active order (status "w trakcie" = 2)
-          const activeOrder = orders.find(
-            (order) => order.status === "w trakcie"
-          );
+          if (decodedCoordinates.length > 0) {
+            // Get the first point from the route
+            const firstPoint = decodedCoordinates[0];
 
-          if (activeOrder && activeOrder.trasa_przejazdu) {
-            // Decode the polyline to get coordinates
-            const decodedCoordinates = polyline.decode(
-              activeOrder.trasa_przejazdu
+            // Set as destination location
+            setDestinationLocation({
+              lat: firstPoint[0], // Latitude
+              lng: firstPoint[1], // Longitude
+            });
+          }
+        } else if (userRole == 2) {
+          // Display the route for passengers
+          if (mapInstance && decodedCoordinates.length > 0) {
+            // Remove any existing polylines
+            mapInstance.eachLayer((layer) => {
+              if (layer instanceof L.Polyline) {
+                mapInstance.removeLayer(layer);
+              }
+            });
+
+            // Convert coordinates to the format expected by Leaflet
+            const routeCoords = decodedCoordinates.map(
+              (coord) => [coord[0], coord[1]] as [number, number]
             );
-            if (decodedCoordinates.length > 0) {
-              // Get the first point from the route
-              const firstPoint = decodedCoordinates[0];
 
-              // Set as destination location
-              setDestinationLocation({
-                lat: firstPoint[0], // Latitude
-                lng: firstPoint[1], // Longitude
-              });
-            }
+            // Draw the route on the map
+            const routePolyline = L.polyline(routeCoords, {
+              color: "#4D7DEA",
+              weight: 5,
+              opacity: 0.8,
+            }).addTo(mapInstance);
+
+            // Fit the map to show the entire route
+            mapInstance.fitBounds(routePolyline.getBounds());
+
+            // Get the last point as destination
+            const lastPoint = decodedCoordinates[decodedCoordinates.length - 1];
+            setDestinationLocation({
+              lat: lastPoint[0],
+              lng: lastPoint[1],
+            });
+            setShowSearch(false);
           }
         }
-        // userType = decoded.userType;
-      } catch (err) {
-        console.error("Błąd dekodowania tokena:", err);
+      } else if (userRole == 2) {
+        setShowSearch(true);
       }
+      // userType = decoded.userType;
+    } catch (err) {
+      console.error("Błąd dekodowania tokena:", err);
     }
   }, [orders]);
 
@@ -296,6 +341,100 @@ const MapComponent2: React.FC<MapComponentProps> = ({
       userMarkerRef.current = marker; // Zapisz referencję
     }
   }, [userLocation, mapInstance]);
+
+  // Add this useEffect to display the driver marker
+  useEffect(() => {
+    if (mapInstance && userRole === 2) {
+      // Find active order for passenger
+      // Clear all existing driver markers
+      driverMarkersRef.current.forEach((marker) => {
+        if (mapInstance) mapInstance.removeLayer(marker);
+      });
+      driverMarkersRef.current = [];
+
+      if (driverMarkerRef.current) {
+        mapInstance.removeLayer(driverMarkerRef.current);
+        driverMarkerRef.current = null;
+      }
+
+      const activeOrder = orders.find((order) => order.status === "w trakcie");
+
+      if (activeOrder) {
+        // Find the driver of this order in the drivers array
+        const orderDriver = drivers.find(
+          (driver) => driver.uzytkownik_id === activeOrder.kierowca_id
+        );
+
+        if (orderDriver) {
+          // Remove previous driver marker if exists
+          if (driverMarkerRef.current) {
+            mapInstance.removeLayer(driverMarkerRef.current);
+          }
+
+          // Create a custom icon for the driver
+          const taxiIcon = L.icon({
+            iconUrl: "/assets/taxi-icon.png", // Add this icon to your assets folder
+            iconSize: [32, 32],
+            iconAnchor: [16, 32],
+            popupAnchor: [0, -32],
+          });
+
+          // Create marker for driver's position
+          const marker = L.marker(
+            [orderDriver.szerokosc_geo, orderDriver.dlugosc_geo],
+            { icon: taxiIcon }
+          )
+            .addTo(mapInstance)
+            .bindPopup(`${activeOrder.kierowca_imie} - Twój kierowca`);
+
+          driverMarkerRef.current = marker;
+          // setDestinationLocation({
+          //   lat: orderDriver.szerokosc_geo, // Latitude
+          //   lng: orderDriver.dlugosc_geo, // Longitude
+          // });
+        }
+      } else {
+        // No active order - show all available drivers
+        // Find drivers who don't have active orders
+        const activeDriverIds = orders
+          .filter((order) => order.status === "w trakcie")
+          .map((order) => order.kierowca_id);
+
+        const availableDrivers = drivers.filter(
+          (driver) => !activeDriverIds.includes(driver.uzytkownik_id)
+        );
+
+        // Create a yellow taxi icon for available drivers
+        const availableTaxiIcon = L.icon({
+          iconUrl: "/assets/taxi-icon.png", // You may need to create this icon
+          iconSize: [24, 24],
+          iconAnchor: [12, 24],
+          popupAnchor: [0, -24],
+        });
+
+        availableDrivers.forEach((driver) => {
+          // Create a custom icon for the driver
+          const taxiIcon = L.icon({
+            iconUrl: "/assets/taxi-icon.png",
+            iconSize: [32, 32],
+            iconAnchor: [16, 32],
+            popupAnchor: [0, -32],
+          });
+
+          // Create marker for driver's position with the icon
+          const marker = L.marker([driver.szerokosc_geo, driver.dlugosc_geo], {
+            icon: taxiIcon,
+          })
+            .addTo(mapInstance)
+            .bindPopup(`${driver.imie_kierowcy} - Dostępny kierowca`);
+
+          driverMarkersRef.current.push(marker);
+
+          // No need for a separate emoji marker since we're using the icon
+        });
+      }
+    }
+  }, [mapInstance, drivers]);
 
   const handleTrasGeneration = async () => {
     // console.log("Trasa");

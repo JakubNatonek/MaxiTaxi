@@ -65,6 +65,7 @@ const Rides: React.FC<RidesProps> = ({
   const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
 
   useEffect(() => {
+    // console.log(orders)
     getUserLocation();
   }, []);
 

@@ -147,4 +147,9 @@
     padding: 10px;
     overflow-y: auto; /* Enable scrolling if the list exceeds the max height */
   }
-  
+  .taxi-icon-label {
+    background: none;
+    border: none;
+    font-size: 20px;
+    text-align: center;
+  }

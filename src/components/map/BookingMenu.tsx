@@ -30,6 +30,9 @@ import {
 
 import polyline from "polyline";
 import "./BookingMenu.css";
+import { Driver } from "../../Driver";
+
+
 
 interface BookingMenuProps {
   size: number;
@@ -44,15 +47,6 @@ interface BookingMenuProps {
   routeData: any;
 }
 
-interface Driver {
-  uzytkownik_id: number;
-  imie_kierowcy: string; 
-  dystans_km: number;
-  model_pojazdu?: string;
-  nr_rejestracyjny?: string;
-  kolor_pojazdu?: string;
-  ocena?: number;
-}
 
 const BookingMenu: React.FC<BookingMenuProps> = ({
   size,
