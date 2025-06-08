@@ -31,6 +31,8 @@ const LoginForm: React.FC<LoginFormProps> = ({ SERVER, onLoginStateChange, handl
 
   const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
+  // Dodaj stan do przechowywania błędów logowania
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   const validateForm = () => {
     const email = String(emailInputRef.current!.value).trim();
@@ -56,6 +58,9 @@ const LoginForm: React.FC<LoginFormProps> = ({ SERVER, onLoginStateChange, handl
   };
 
   const handle_login = async () => {
+    // Resetuj ewentualne poprzednie błędy logowania
+    setLoginError(null);
+    
     if (validateForm()) {
       const email = String(emailInputRef.current?.value ?? "").trim();
       const password = await hashPassword(String(passwordInputRef.current?.value ?? "").trim(), SALT);
@@ -64,7 +69,13 @@ const LoginForm: React.FC<LoginFormProps> = ({ SERVER, onLoginStateChange, handl
         const result = await sendEncryptedData("login", { user: email, password });
         localStorage.setItem("jwt", result.token); // Przechowaj token JWT
         onLoginStateChange(true);
-      } catch (error) {
+      } catch (error: any) {
+        // Wyświetl komunikat błędu z serwera jeśli istnieje
+        if (error.message) {
+          setLoginError(error.message);
+        } else {
+          setLoginError("Wystąpił błąd podczas logowania. Spróbuj ponownie.");
+        }
         console.error("Login failed:", error);
       }
     }
@@ -84,6 +95,17 @@ const LoginForm: React.FC<LoginFormProps> = ({ SERVER, onLoginStateChange, handl
         <div className="login-spacer" />
 
         <IonGrid className="login-form">
+          {/* Dodaj wyświetlanie błędu logowania na górze formularza */}
+          {loginError && (
+            <IonRow>
+              <IonCol>
+                <IonText color="danger" className="ion-text-center">
+                  <p><strong>{loginError}</strong></p>
+                </IonText>
+              </IonCol>
+            </IonRow>
+          )}
+          
           <IonRow>
             <IonCol>
               <IonItem className="login-input">
@@ -138,7 +160,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ SERVER, onLoginStateChange, handl
           </IonRow>
         </IonGrid>
         <div className="log-bottom-image">
-        <img src="public/assets/login-dol.png" alt="Logowanie stopka" />
+          <img src="/assets/login-dol.png" alt="Logowanie stopka" />
         </div>
       </IonContent>
     </IonApp>

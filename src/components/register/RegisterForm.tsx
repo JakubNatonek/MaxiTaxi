@@ -21,30 +21,84 @@ interface RegisterFormProps {
   onLoginStateChange: (isLogin: boolean) => void;
   handlePageChange: (page: string) => void;
   hashPassword: (password: string, salt: string) => Promise<string>;
-  sendEncryptedData:  (endpoint: string, data: Record<string, unknown>) => Promise<any>;
+  sendEncryptedData: (
+    endpoint: string,
+    data: Record<string, unknown>
+  ) => Promise<any>;
 }
 
-const RegisterForm: React.FC<RegisterFormProps> = ({ SERVER, onLoginStateChange, handlePageChange, hashPassword, sendEncryptedData}) => {
+const RegisterForm: React.FC<RegisterFormProps> = ({
+  SERVER,
+  onLoginStateChange,
+  handlePageChange,
+  hashPassword,
+  sendEncryptedData,
+}) => {
   const emailInputRef = useRef<HTMLIonInputElement>(null);
   const passwordInputRef = useRef<HTMLIonInputElement>(null);
   const confirmPasswordInputRef = useRef<HTMLIonInputElement>(null);
 
   const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
-  const [confirmPasswordError, setConfirmPasswordError] = useState<string | null >(null);
+  const [confirmPasswordError, setConfirmPasswordError] = useState<
+    string | null
+  >(null);
 
+  const [registerError, setRegisterError] = useState<string | null>(null);
 
   const handle_register = async () => {
+    // Reset any previous errors
+    setRegisterError(null);
+
     if (validateForm()) {
-      const email = String(emailInputRef.current?.value ?? "").trim();
-      const password = await hashPassword(String(passwordInputRef.current?.value ?? "").trim(), SALT);
-      const response = await sendEncryptedData("register", { user: email, password });
-      if(response.ok) {
-        // wykonano pomyślnie
-        onLoginStateChange(true);
+      try {
+        const email = String(emailInputRef.current?.value ?? "").trim();
+        const password = await hashPassword(
+          String(passwordInputRef.current?.value ?? "").trim(),
+          SALT
+        );
+
+        const response = await sendEncryptedData("register", {
+          user: email,
+          password,
+        });
+
+        if (response.token) {
+          // Save JWT token to localStorage
+          localStorage.setItem("jwt", response.token);
+
+          // Update login state
+          onLoginStateChange(true);
+
+          // Navigate to map page
+          handlePageChange("map");
+        } else {
+          setRegisterError("Błąd podczas rejestracji. Spróbuj ponownie.");
+        }
+      } catch (error: any) {
+        // Handle registration errors
+        if (error.message) {
+          setRegisterError(error.message);
+        } else {
+          setRegisterError(
+            "Wystąpił błąd podczas rejestracji. Spróbuj ponownie."
+          );
+        }
+        console.error("Registration failed:", error);
       }
     }
   };
+  // const handle_register = async () => {
+  //   if (validateForm()) {
+  //     const email = String(emailInputRef.current?.value ?? "").trim();
+  //     const password = await hashPassword(String(passwordInputRef.current?.value ?? "").trim(), SALT);
+  //     const response = await sendEncryptedData("register", { user: email, password });
+  //     if(response.ok) {
+  //       // wykonano pomyślnie
+  //       onLoginStateChange(true);
+  //     }
+  //   }
+  // };
 
   const goToLogin = () => {
     handlePageChange("login");
@@ -53,7 +107,9 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ SERVER, onLoginStateChange,
   const validateForm = () => {
     const email = String(emailInputRef.current!.value).trim();
     const password = String(passwordInputRef.current!.value).trim();
-    const confirmPassword = String(confirmPasswordInputRef.current!.value).trim();
+    const confirmPassword = String(
+      confirmPasswordInputRef.current!.value
+    ).trim();
 
     let isValid = true;
 
@@ -95,13 +151,29 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ SERVER, onLoginStateChange,
         <div className="register-spacer" />
 
         <IonGrid className="register-form">
+          {/* Display registration error if any */}
+          {registerError && (
+            <IonRow>
+              <IonCol>
+                <IonText color="danger" className="ion-text-center">
+                  <p>
+                    <strong>{registerError}</strong>
+                  </p>
+                </IonText>
+              </IonCol>
+            </IonRow>
+          )}
           <IonRow>
             <IonCol>
               <IonItem className="register-input">
                 <IonLabel position="floating">Email</IonLabel>
                 <IonInput ref={emailInputRef} type="email" />
               </IonItem>
-              {emailError && <IonText color="danger"><p>{emailError}</p></IonText>}
+              {emailError && (
+                <IonText color="danger">
+                  <p>{emailError}</p>
+                </IonText>
+              )}
             </IonCol>
           </IonRow>
 
@@ -111,7 +183,11 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ SERVER, onLoginStateChange,
                 <IonLabel position="floating">Hasło</IonLabel>
                 <IonInput ref={passwordInputRef} type="password" />
               </IonItem>
-              {passwordError && <IonText color="danger"><p>{passwordError}</p></IonText>}
+              {passwordError && (
+                <IonText color="danger">
+                  <p>{passwordError}</p>
+                </IonText>
+              )}
             </IonCol>
           </IonRow>
 
@@ -121,13 +197,21 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ SERVER, onLoginStateChange,
                 <IonLabel position="floating">Potwierdź hasło</IonLabel>
                 <IonInput ref={confirmPasswordInputRef} type="password" />
               </IonItem>
-              {confirmPasswordError && <IonText color="danger"><p>{confirmPasswordError}</p></IonText>}
+              {confirmPasswordError && (
+                <IonText color="danger">
+                  <p>{confirmPasswordError}</p>
+                </IonText>
+              )}
             </IonCol>
           </IonRow>
 
           <IonRow>
             <IonCol>
-              <IonButton expand="block" className="register-button" onClick={handle_register}>
+              <IonButton
+                expand="block"
+                className="register-button"
+                onClick={handle_register}
+              >
                 ZAREJESTRUJ
               </IonButton>
             </IonCol>
@@ -151,7 +235,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ SERVER, onLoginStateChange,
           </IonRow>
         </IonGrid>
         <div className="register-bottom-image">
-        <img src="public/assets/login-dol.png" alt="Rejestracja stopka" />
+          <img src="/assets/login-dol.png" alt="Rejestracja stopka" />
         </div>
       </IonContent>
     </IonApp>

@@ -1,214 +1,333 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   IonPage,
   IonHeader,
   IonToolbar,
   IonTitle,
   IonContent,
-  IonButton,
-  IonList,
+  IonCard,
+  IonCardHeader,
+  IonCardTitle,
+  IonCardContent,
   IonItem,
   IonLabel,
+  IonIcon,
   IonInput,
-  IonToast,
+  IonButton,
+  IonButtons,
+  IonBackButton,
+  IonMenuButton,
+  IonList,
+  IonBadge,
   IonLoading,
+  IonRefresher,
+  IonRefresherContent,
+  IonRow,
+  IonModal,
 } from "@ionic/react";
-import "./Payments.css"; // <— import Twoich styli
+import {
+  cardOutline,
+  addCircleOutline,
+  carOutline,
+  cashOutline,
+  closeCircle,
+} from "ionicons/icons";
+import "./Payments.css";
 
-interface Card {
-  id: number;
+import { Order } from "../../OrderInt";
+import { Platnosc } from "../../Platnosc";
+
+import PayPalButton from "./PayPalButton";
+
+interface CardData {
   number: string;
-  expiry: string;
   holder: string;
+  expiry: string;
 }
 
 interface PaymentsProps {
-  sendEncryptedData: (endpoint: string, data: Record<string, unknown>) => Promise<any>;
+  sendEncryptedData: (
+    endpoint: string,
+    data: Record<string, unknown>,
+    method?: string
+  ) => Promise<any>;
   getEncryptedData: (endpoint: string) => Promise<any>;
 }
 
-const SERVER = import.meta.env.VITE_REACT_APP_API_URL || "http://localhost:8080";
+const Payments: React.FC<PaymentsProps> = ({
+  sendEncryptedData,
+  getEncryptedData,
+}) => {
+  // States for rides and payments
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [payments, setPayments] = useState<Platnosc[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-const Payments: React.FC<PaymentsProps> = ({ sendEncryptedData, getEncryptedData }) => {
-  const [cards, setCards] = useState<Card[]>([]);
-  const [busy, setBusy] = useState(false);
+  // Add states for the payment modal
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
-  const [showForm, setShowForm] = useState(false);
-  const [number, setNumber] = useState("");
-  const [expiry, setExpiry] = useState("");
-  const [holder, setHolder] = useState("");
-
-  const [toast, setToast] = useState<{ open: boolean; msg: string }>({ open: false, msg: "" });
-
-  // 1. Pobierz istniejące karty
-  const fetchList = async () => {
-    setBusy(true);
+  const fetchRides = async () => {
     try {
-      const data = (await getEncryptedData("karty")) as Card[];
-      setCards(data);
-    } catch (e: any) {
-      console.error("Błąd pobierania kart:", e);
-      setToast({ open: true, msg: "Błąd pobierania kart" });
+      setIsLoading(true);
+      const response = await getEncryptedData("zlecenia");
+
+      if (response && Array.isArray(response)) {
+        setOrders(response);
+        console.log("Fetched rides:", response);
+      } else {
+        console.warn("Invalid ride data format received");
+        setOrders([]);
+      }
+    } catch (error) {
+      console.error("Error fetching rides:", error);
+      setError("Nie udało się pobrać przejazdów");
     } finally {
-      setBusy(false);
+      setIsLoading(false);
     }
   };
 
+  const fetchPayments = async () => {
+    try {
+      setIsLoading(true);
+      const response = await getEncryptedData("platnosci");
+
+      if (response && Array.isArray(response)) {
+        setPayments(response);
+        console.log("Fetched payments:", response);
+      } else {
+        console.warn("Invalid payment data format received");
+        setPayments([]);
+      }
+    } catch (error) {
+      console.error("Error fetching payments:", error);
+      setError("Nie udało się pobrać historii płatności");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fetch both rides and payments data
+  const fetchAllData = async () => {
+    setError(null);
+    setIsLoading(true);
+    await Promise.all([fetchRides(), fetchPayments()]);
+    setIsLoading(false);
+  };
+
+  // Load data when component mounts
   useEffect(() => {
-    fetchList();
+    fetchAllData();
   }, []);
 
-  // 2. Dodaj kartę (bez czyszczenia pól)
-  const handleAdd = async () => {
-    if (!number.trim() || !expiry.trim() || !holder.trim()) {
-      setToast({ open: true, msg: "Wypełnij wszystkie pola" });
-      return;
-    }
-    const numClean = number.replace(/\s+/g, "");
-    if (!/^\d{16}$/.test(numClean)) {
-      setToast({ open: true, msg: "Numer karty musi mieć 16 cyfr" });
-      return;
-    }
-    if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(expiry)) {
-      setToast({ open: true, msg: "Data ważności w formacie MM/YY" });
-      return;
-    }
-
-    try {
-      await sendEncryptedData("karty", { number: numClean, expiry, holder });
-      setToast({ open: true, msg: "Karta dodana" });
-      await fetchList();
-      // tutaj NIE czyścimy number/expiry/holder – użytkownik może natychmiast dodać kolejną
-    } catch (e: any) {
-      console.error("Błąd dodawania karty:", e);
-      setToast({ open: true, msg: e.message || "Błąd dodawania karty" });
-    }
+  const handleRefresh = async (event: any) => {
+    await fetchAllData();
+    event.detail.complete();
   };
 
-  // 3. Usuń kartę
-  const handleRemove = async (id: number) => {
-    const token = localStorage.getItem("jwt") || "";
-    try {
-      const resp = await fetch(`${SERVER}/karty/${id}`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (!resp.ok) {
-        const err = await resp.json();
-        throw new Error(err.message || resp.statusText);
-      }
-      setToast({ open: true, msg: "Karta usunięta" });
-      await fetchList();
-    } catch (e: any) {
-      console.error("Błąd usuwania karty:", e);
-      setToast({ open: true, msg: e.message || "Błąd usuwania karty" });
-    }
+  // Handle opening the payment modal
+  const handleOpenPaymentModal = (order: Order) => {
+    setSelectedOrder(order);
+    setShowPaymentModal(true);
+  };
+
+  // Handle successful payment
+  const handlePaymentSuccess = (details: any) => {
+    console.log("Payment successful:", details);
+    setShowPaymentModal(false);
+    fetchPayments(); // Refresh payments after successful payment
+    fetchRides(); // Refresh rides to update statuses
   };
 
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar>
-          <IonTitle>Moje karty</IonTitle>
+        <IonToolbar color="custom-orange">
+          <IonButtons slot="start">
+            <IonMenuButton />
+          </IonButtons>
+          <IonTitle className="toolbar-logo-title" />
+          <IonTitle>Płatności</IonTitle>
         </IonToolbar>
       </IonHeader>
-      <IonContent className="ion-padding">
 
-        {/* Przełącznik formularza */}
-        <IonButton expand="full" onClick={() => setShowForm(f => !f)}>
-          {showForm ? "Anuluj" : "Dodaj kartę"}
-        </IonButton>
+      <IonContent className="payments-background">
+        <IonLoading isOpen={isLoading} message="Ładowanie danych..." />
 
-        {/* Formularz dodawania */}
-        {showForm && (
-          <div className="add-card-form">
-            {/* Podgląd */}
-            <div className="credit-card">
-              <div className="card-visual">
-                <div className="chip"></div>
-                <div className="card-number">
-                  {number
-                    ? number.replace(/(\d{4})(?=\d)/g, "$1 ")
-                    : "•••• •••• •••• ••••"}
-                </div>
-                <div className="card-details">
-                  <span>{holder || "Imię Nazwisko"}</span>
-                  <span>{expiry || "MM/YY"}</span>
-                </div>
-              </div>
+        <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
+          <IonRefresherContent></IonRefresherContent>
+        </IonRefresher>
 
-              {/* Pola */}
-              <IonItem>
-                <IonLabel position="stacked">Numer karty</IonLabel>
-                <IonInput
-                  value={number}
-                  placeholder="1234 5678 9012 3456"
-                  maxlength={19}
-                  onIonChange={e => setNumber(e.detail.value || "")}
-                />
-              </IonItem>
-              <IonItem>
-                <IonLabel position="stacked">Data ważności (MM/YY)</IonLabel>
-                <IonInput
-                  value={expiry}
-                  placeholder="MM/YY"
-                  onIonChange={e => setExpiry(e.detail.value || "")}
-                />
-              </IonItem>
-              <IonItem>
-                <IonLabel position="stacked">Właściciel karty</IonLabel>
-                <IonInput
-                  value={holder}
-                  placeholder="Jan Kowalski"
-                  onIonChange={e => setHolder(e.detail.value || "")}
-                />
-              </IonItem>
-
-              <IonButton
-                className="save-button"
-                expand="full"
-                onClick={handleAdd}
-                disabled={busy}
-              >
-                Zapisz kartę
-              </IonButton>
-            </div>
-          </div>
+        {error && (
+          <IonCard color="danger">
+            <IonCardContent>{error}</IonCardContent>
+          </IonCard>
         )}
 
-        <IonLoading isOpen={busy} message="Ładowanie kart..." />
+        {/* Payment History */}
+        <div className="payment-history-container">
+          <h2 className="section-title">Historia płatności</h2>
+          {payments.length > 0 ? (
+            payments.map((payment) => (
+              <IonCard key={payment.id} className="payment-card">
+                <IonCardHeader>
+                  <IonCardTitle
+                    className="payment-card-title"
+                    style={{ color: "white" }}
+                  >
+                    Płatność nr: {payment.id}
+                  </IonCardTitle>
+                  <div className="payment-card-details">
+                    <p>Przejazd nr: {payment.przejazd_id}</p>
+                    <p>Kwota: {payment.kwota} zł</p>
+                    <p>Data: {new Date(payment.data).toLocaleDateString()}</p>
+                    <p>
+                      <strong>Status:</strong> Opłacony
+                    </p>
+                  </div>
+                </IonCardHeader>
+              </IonCard>
+            ))
+          ) : (
+            <p className="ion-text-center">Brak historii płatności</p>
+          )}
+        </div>
 
-        {/* Lista zapisanych kart */}
-        <IonList>
-          {cards.map(c => (
-            <IonItem key={c.id} className="card-item">
-              <IonLabel>
-                <div className="card-mask">**** **** **** {c.number.slice(-4)}</div>
-                <div className="card-holder">{c.holder}</div>
-                <div className="card-expiry">ważna do {c.expiry}</div>
-              </IonLabel>
-              <IonButton
-                slot="end"
-                color="danger"
-                size="small"
-                onClick={() => handleRemove(c.id)}
-              >
-                Usuń
-              </IonButton>
-            </IonItem>
-          ))}
-          {!busy && cards.length === 0 && <p>Brak zapisanych kart.</p>}
-        </IonList>
+        {/* Unpaid Rides */}
+        <div className="unpaid-rides-container">
+          <h2 className="section-title">Przejazdy do opłacenia</h2>
+          {(() => {
+            // Funkcja sprawdzająca czy przejazd został opłacony
+            const isRidePaid = (rideId: number) => {
+              return payments.some((payment) => payment.przejazd_id === rideId);
+            };
 
-        <IonToast
-          isOpen={toast.open}
-          message={toast.msg}
-          duration={3000}
-          onDidDismiss={() => setToast(t => ({ ...t, open: false }))}
-        />
+            // Filtruj przejazdy, które są zakończone i nie mają płatności
+            const unpaidRides = orders.filter(
+              (order) =>
+                order.status === "zakonczone" && !isRidePaid(order.zlecenie_id)
+            );
+
+            if (unpaidRides.length > 0) {
+              return unpaidRides.map((order) => (
+                <IonCard key={order.zlecenie_id} className="ride-card">
+                  <IonCardHeader>
+                    <IonCardTitle
+                      className="order-card-title"
+                      style={{ color: "white" }}
+                    >
+                      Zlecenie nr: {order.zlecenie_id}
+                    </IonCardTitle>
+                    <div className="order-card-details">
+                      <p>
+                        Pasażer:{" "}
+                        {order.pasazer_imie !== "NULL"
+                          ? order.pasazer_imie
+                          : "Nieznany"}
+                      </p>
+                      <p>Cena: {order.cena} zł</p>
+                      <p>Dystans: {order.dystans_km} km</p>
+                      <p>
+                        Data zamówienia:{" "}
+                        {new Date(order.data_zamowienia).toLocaleDateString()}
+                      </p>
+                      <p>
+                        <strong>Status:</strong> {order.status}
+                      </p>
+                      <p>
+                        <strong>Stan Płatności:</strong>{" "}
+                        <span className="payment-status-unpaid">
+                          Nieopłacony
+                        </span>
+                      </p>
+                      <IonButton
+                        expand="block"
+                        size="default"
+                        className="pay-button"
+                        onClick={() => handleOpenPaymentModal(order)}
+                      >
+                        Zapłać {order.cena} zł
+                      </IonButton>
+                    </div>
+                  </IonCardHeader>
+                </IonCard>
+              ));
+            } else {
+              return (
+                <p className="ion-text-center">Brak przejazdów do opłacenia</p>
+              );
+            }
+          })()}
+        </div>
+
+        {/* Payment Modal */}
+        <IonModal
+          isOpen={showPaymentModal}
+          onDidDismiss={() => setShowPaymentModal(false)}
+        >
+          <IonHeader>
+            <IonToolbar color="custom-orange">
+              <IonTitle>Płatność za przejazd</IonTitle>
+              <IonButtons slot="end">
+                <IonButton onClick={() => setShowPaymentModal(false)}>
+                  <IonIcon icon={closeCircle} />
+                </IonButton>
+              </IonButtons>
+            </IonToolbar>
+          </IonHeader>
+          <IonContent className="ion-padding">
+            {selectedOrder && (
+              <div className="payment-modal-content">
+                <IonCard className="payment-summary">
+                  <IonCardHeader>
+                    <IonCardTitle>Podsumowanie płatności</IonCardTitle>
+                  </IonCardHeader>
+                  <IonCardContent>
+                    <p>
+                      <strong>Przejazd nr:</strong> {selectedOrder.zlecenie_id}
+                    </p>
+                    <p>
+                      <strong>Data:</strong>{" "}
+                      {new Date(
+                        selectedOrder.data_zamowienia
+                      ).toLocaleDateString()}
+                    </p>
+                    <p>
+                      <strong>Dystans:</strong> {selectedOrder.dystans_km} km
+                    </p>
+                    <p>
+                      <strong>Do zapłaty:</strong> {selectedOrder.cena} zł
+                    </p>
+                  </IonCardContent>
+                </IonCard>
+
+                <h3 className="payment-method-title">
+                  Wybierz metodę płatności:
+                </h3>
+
+                <PayPalButton
+                  amount={parseFloat(selectedOrder.cena)}
+                  rideId={selectedOrder.zlecenie_id}
+                  sendEncryptedData={sendEncryptedData}
+                  onSuccess={handlePaymentSuccess}
+                  onError={(error) => {
+                    console.error("Payment error:", error);
+                  }}
+                />
+
+                <IonButton
+                  expand="block"
+                  color="medium"
+                  onClick={() => setShowPaymentModal(false)}
+                  className="cancel-payment-button"
+                >
+                  Anuluj
+                </IonButton>
+              </div>
+            )}
+          </IonContent>
+        </IonModal>
       </IonContent>
     </IonPage>
   );

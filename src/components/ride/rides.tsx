@@ -22,6 +22,7 @@ import "leaflet/dist/leaflet.css";
 import polyline from "polyline";
 
 import L from "leaflet";
+import "./rides.css";
 
 interface Order {
   zlecenie_id: number; // ID zlecenia
@@ -44,12 +45,14 @@ interface RidesProps {
   ) => Promise<any>;
   getEncryptedData: (endpoint: string) => Promise<any>;
   orders: Order[]; // Opcjonalna lista zamówień
+  handlePageChange: (page: string, params?: any) => void;  
 }
 
 const Rides: React.FC<RidesProps> = ({
   sendEncryptedData,
   getEncryptedData,
   orders, // Użyj przekazanej listy zamówień lub pustej tablicy
+  handlePageChange,
 }) => {
   const [myOrders, setMyOrders] = useState<Order[]>(orders);
   const [isMapVisible, setIsMapVisible] = useState<boolean>(false);
@@ -62,6 +65,7 @@ const Rides: React.FC<RidesProps> = ({
   const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
 
   useEffect(() => {
+    // console.log(orders)
     getUserLocation();
   }, []);
 
@@ -115,7 +119,7 @@ const Rides: React.FC<RidesProps> = ({
   const handleTrasShow = (route: string) => {
     if (mapInstance) {
       const decodedCoordinates = polyline.decode(route);
-      console.log(decodedCoordinates);
+      //console.log(decodedCoordinates);
       const routeDecoded = decodedCoordinates.map(
         (coord) => [coord[0], coord[1]] as [number, number]
       );
@@ -160,6 +164,15 @@ const Rides: React.FC<RidesProps> = ({
     }
   };
 
+  const handleViewRideDetails = (orderId: number) => {
+    handlePageChange("rideDetail", { rideId: orderId });
+  };
+
+  // W komponencie Rides dodaj useEffect do logowania statusów
+  useEffect(() => {
+    //console.log("Statusy przejazdów:", myOrders.map(order => ({ id: order.zlecenie_id, status: order.status })));
+  }, [myOrders]);
+
   return (
     <IonApp>
       {/* ===== STRONA DO PRZEGLĄDANIA PRZEJAZDÓW ===== */}
@@ -170,7 +183,7 @@ const Rides: React.FC<RidesProps> = ({
               <IonMenuButton />
             </IonButtons>
             <IonTitle className="toolbar-logo-title">
-              <img src="public/assets/menu_logo.png" alt="MaxiTaxi Logo" />
+              <img src="/assets/menu_logo.png" alt="MaxiTaxi Logo" />
             </IonTitle>
           </IonToolbar>
         </IonHeader>
@@ -181,8 +194,8 @@ const Rides: React.FC<RidesProps> = ({
               {myOrders.map((order) => (
                 <IonCard
                   key={order.zlecenie_id}
-                  className="order-card"
-                  onClick={() => handleShowMap(order.trasa_przejazdu)}
+                  className={order.status === "zlecono" || order.status === "w trakcie" ? "active-ride" : ""}
+                  onClick={() => handleViewRideDetails(order.zlecenie_id)}
                 >
                   <IonCardHeader>
                     <IonCardTitle className="order-card-title" style={{ color: "white" }}>
@@ -200,6 +213,12 @@ const Rides: React.FC<RidesProps> = ({
                       <p>
                         Data zamówienia:{" "}
                         {new Date(order.data_zamowienia).toLocaleDateString()}
+                      </p>
+                      <p>
+                        <strong>Status:</strong> {order.status}
+                      </p>
+                      <p>
+                        <strong>Stan Płatności:</strong> {order.status}
                       </p>
                     </div>
                   </IonCardHeader>
