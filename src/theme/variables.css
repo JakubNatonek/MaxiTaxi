@@ -17,4 +17,18 @@ http://ionicframework.com/docs/theming/ */
     --ion-color-custom-grey-shade: #1f1f1f;
     --ion-color-custom-grey-tint: #3a3a3a;
   }
-  
+  on-content {
+  --background: var(--ion-color-custom-grey) !important;
+}
+
+ion-toolbar {
+  --background: var(--ion-color-primary) !important;
+  --color: var(--ion-color-custom-orange-contrast) !important;
+}
+
+
+.search-list {
+  background: var(--ion-color-custom-grey) !important;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}

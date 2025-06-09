@@ -42,7 +42,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ handlePageChange, contentId }) => {
 
-const roleId = Number(localStorage.getItem("roleId"));
+  let roleId = Number(localStorage.getItem("roleId"));
 
   const token = localStorage.getItem("jwt");
 
@@ -51,6 +51,8 @@ const roleId = Number(localStorage.getItem("roleId"));
     try {
       const decoded = jwtDecode<JwtPayload>(token);
       email = decoded.email;
+      roleId = decoded.roleId
+
       // userType = decoded.userType;
     } catch (err) {
       console.error("Błąd dekodowania tokena:", err);

@@ -66,7 +66,7 @@ const DriverOrders: React.FC<DriverOrdersProps> = ({
   // }, []);
 
   useEffect(() => {
-    setMyOrders(orders)
+    setMyOrders(orders);
   }, [orders]);
 
   const getUserLocation = () => {
@@ -179,6 +179,18 @@ const DriverOrders: React.FC<DriverOrdersProps> = ({
     return { iv: Array.from(iv), data: Array.from(new Uint8Array(encrypted)) };
   }
 
+  const getOrders = async () => {
+    try {
+      const response = await getEncryptedData("zlecenia");
+      console.log("Orders fetched successfully");
+      setMyOrders(response);
+      return response;
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+      return [];
+    }
+  };
+
   async function updateOrderStatus(
     orderId: number,
     statusId: number
@@ -205,6 +217,7 @@ const DriverOrders: React.FC<DriverOrdersProps> = ({
       }
 
       const result = await response.json();
+      getOrders();
       return result; // Zwróć wynik z serwera
     } catch (error: any) {
       console.error("Błąd przy aktualizowaniu statusu zlecenia:", error);
@@ -262,7 +275,8 @@ const DriverOrders: React.FC<DriverOrdersProps> = ({
                     </IonCardHeader>
                   </IonCard>
                 ))}
-              {!myOrders.filter((order) => order.status === "zlecono").length && (
+              {!myOrders.filter((order) => order.status === "zlecono")
+                .length && (
                 <div className="no-orders">Brak dostępnych zleceń</div>
               )}
             </IonList>
@@ -283,18 +297,26 @@ const DriverOrders: React.FC<DriverOrdersProps> = ({
             <IonContent>
               <IonRow>
                 <IonCol>
-                  <IonButton expand="full" color="success" onClick={() => {
-                    updateOrderStatus(curentOrder!.zlecenie_id, 2);
-                    setIsMapVisible(false);
-                  }}>
+                  <IonButton
+                    expand="full"
+                    color="success"
+                    onClick={() => {
+                      updateOrderStatus(curentOrder!.zlecenie_id, 2);
+                      setIsMapVisible(false);
+                    }}
+                  >
                     Akceptuj
                   </IonButton>
                 </IonCol>
                 <IonCol>
-                  <IonButton expand="full" color="danger" onClick={() => {
-                    updateOrderStatus(curentOrder!.zlecenie_id, 4);
-                    setIsMapVisible(false);
-                  }}>
+                  <IonButton
+                    expand="full"
+                    color="danger"
+                    onClick={() => {
+                      updateOrderStatus(curentOrder!.zlecenie_id, 4);
+                      setIsMapVisible(false);
+                    }}
+                  >
                     Odrzuć
                   </IonButton>
                 </IonCol>

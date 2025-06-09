@@ -1,21 +1,26 @@
-.chat-page, 
+/* === chat.css – pełna wersja z przezroczystym szarym paskiem pisania === */
+
+/* Globalne tło dla strony czatu i listy czatów */
+.chat-page,
 .chat-list-page {
   background: url('/assets/chat-background.png') no-repeat center center;
   background-size: cover;
 }
 
+/* Pomarańczowy pasek toolbar w czacie i na liście czatów */
 .chat-page ion-toolbar,
-
 .chat-list-page ion-toolbar {
-  --background: linear-gradient(135deg, #ff6100, #ff8c00);
-  --color: #ffffff;
+  --background: linear-gradient(135deg, #ff6100, #ff8c00) !important;
+  --color: #ffffff !important;
 }
 
+/* Transparentne tło kontenera, by widać globalne tło */
 .chat-page ion-content,
 .chat-list-page ion-content {
   --background: transparent;
 }
 
+/* Lista i elementy listy transparentne, by widać było tło */
 .chat-page ion-list,
 .chat-list-page ion-list,
 .chat-list-page ion-item {
@@ -33,11 +38,21 @@
 .chat-card:hover {
   transform: translateY(-2px);
 }
-.chat-card-title {
-  color: #ff8c00;
-  font-size: 1.1rem;
-  font-weight: bold;
+
+/* Tytuł karty czatu – wymuszenie białego koloru */
+.chat-with-title,
+.chat-card .chat-with-title {
+  color: #ffffff !important;
 }
+
+/* Data poniżej tytułu */
+.chat-card-date {
+  color: #888;
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+
+/* Odznaka numeru czatu */
 .chat-ride-badge {
   color: #fff;
   padding: 2px 6px;
@@ -46,21 +61,30 @@
   font-size: 1.1rem;
   text-align: right;
 }
-.chat-card-date {
-  color: #888;
-  font-size: 0.85rem;
-  margin-top: 4px;
-}
+
+/* Komunikat „Brak czatów” */
 .no-chats {
   text-align: center;
   color: #888;
   margin: 32px 0;
 }
 
+/* === Layout wiadomości + input === */
 .chat-content {
   padding: 16px;
-  gap: 5px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
+
+/* Lista wiadomości rośnie i przewija się */
+.chat-content ion-list {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 60px; /* zostawiamy miejsce na input */
+}
+
+/* Bąbelki wiadomości */
 .chat-bubble {
   max-width: 50%;
   padding: 8px 12px;
@@ -71,66 +95,59 @@
 .chat-bubble.mine {
   background: #ff8c00;
   color: #121212;
-  align-self: flex-start; 
-  margin-right: auto;     
-  border-bottom-left-radius: 2px;;
+  align-self: flex-start;
+  margin-right: auto;
+  border-bottom-left-radius: 2px;
 }
 .chat-bubble.other {
   background: #e8dfd5;
   color: #121212;
-  align-self: flex-end;    
-  margin-left: auto;       
+  align-self: flex-end;
+  margin-left: auto;
   border-bottom-right-radius: 2px;
 }
 .bubble-meta {
   font-size: 0.75rem;
-  color: #000000;
+  color: #000;
   margin-top: 4px;
 }
 
+/* Wrapper inputu przyklejony na dole - przezroczysty szary */
 .chat-input-wrapper {
-  display: flex;
-  padding: 8px 16px;
-  background: #1f1f1f;
-}
-.chat-input {
-  flex: 1;
-  --background: #2e2e2e;
-  --color: #fafafa;
-  --padding-start: 14px;
-  --padding-end: 14px;
-  --placeholder-color: #bbb;
-  border-radius: 20px;
-  height: 44px;
-}
-
-.chat-input-wrapper {
-  position: absolute;
+  position: sticky;
   bottom: 0;
   left: 0;
   right: 0;
   display: flex;
   align-items: center;
   padding: 8px 12px;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(32, 32, 32, 0.8) !important;
   backdrop-filter: blur(6px);
   z-index: 10;
 }
 
+/* Pole tekstowe szare, przezroczyste */
+.chat-input {
+  flex: 1;
+  --background: rgba(255, 255, 255, 0.1) !important;
+  --color: #e0e0e0 !important;
+  --placeholder-color: #aaaaaa !important;
+  border-radius: 20px;
+  height: 44px;
+  padding-left: 14px;
+  padding-right: 14px;
+}
+
+/* Guzik Wyślij */
 .chat-send-btn {
   --background: #ff8c00;
-  --color: #ffffff;
+  --color: #fff;
   border-radius: 20px;
   margin-left: 8px;
   min-width: 80px;
   height: 44px;
   font-weight: bold;
 }
-
-.chat-input:focus {
-  box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
-}
-
 .chat-send-btn:hover {
   --background: #c85204;
 }
@@ -140,14 +157,36 @@ ion-menu {
   --width: 240px;
 }
 
+/* Pomarańczowy pasek w menu */
 .orange-bar {
   --background: #ff6100;
-  --color: #ffffff;
+  --color: #fff;
 }
 
+/* Dodatkowe tytuły nad bąbelkami */
 .bubble-sender-name {
   font-size: 0.75rem;
   color: #aaa;
   margin-top: 2px;
   text-align: start;
+}
+
+.chatlist-select-sheet .action-sheet-group .action-sheet-button,
+.chatlist-select-sheet .action-sheet-group .action-sheet-button .button-inner {
+  color: #ffffff !important;
+}
+
+/* Nagłówek action-sheet */
+.chatlist-select-sheet .action-sheet-group .action-sheet-title {
+  color: #ffffff !important;
+}
+
+/* Przycisk anulowania i OK */
+.chatlist-select-sheet .action-sheet-group .action-sheet-button-group button {
+  --color: #ffffff !important;
+}
+
+/* Responsywność (opcjonalnie) */
+@media (min-width: 768px) {
+  /* np. modyfikacje na większych ekranach */
 }

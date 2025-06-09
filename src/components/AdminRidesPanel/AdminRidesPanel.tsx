@@ -336,9 +336,9 @@ const AdminRidesPanel: React.FC<AdminRidesPanelProps> = ({ getEncryptedData, sen
             </IonCol>
           </IonRow>
           
-          <IonRow>
+          <IonRow className="rides-filter-bar">
             <IonCol size="12" size-md="8">
-              <IonSearchbar
+              <IonSearchbar 
                 value={search}
                 onIonChange={(e) => setSearch(e.detail.value!)}
                 placeholder="Szukaj po ID, email pasażera lub kierowcy"
@@ -348,7 +348,9 @@ const AdminRidesPanel: React.FC<AdminRidesPanelProps> = ({ getEncryptedData, sen
             <IonCol size="12" size-md="4">
               <IonItem>
                 <IonLabel>Filtruj po statusie:</IonLabel>
+    
                 <IonSelect
+  
                   value={statusFilter}
                   onIonChange={(e) => setStatusFilter(e.detail.value)}
                   placeholder="Wszystkie"

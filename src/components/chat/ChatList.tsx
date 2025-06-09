@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import {
   IonPage,
   IonHeader,
@@ -12,97 +12,127 @@ import {
   IonCardHeader,
   IonCardTitle,
   IonLoading,
-  IonButton,
-  IonIcon,
-  IonAlert,
+  IonBadge,
+  IonSelect,
+  IonSelectOption,
 } from "@ionic/react";
-
-import { trashOutline } from "ionicons/icons";
-
-import "./chat.css";
-import { jwtDecode } from "jwt-decode";
+import { io, Socket } from "socket.io-client";
 import { JwtPayload } from "../../JwtPayLoad";
+import "./chat.css";
 
 interface ChatRoom {
   rideId: number;
   data_zamowienia: string;
   otherName: string;
+  status: number; // 1=otwarty, 2=zakończony, 3=zamknięty
 }
 
 interface ChatListProps {
   handlePageChange: (page: string, params?: any) => void;
-  getEncryptedData: (endpoint: string) => Promise<any>;
+  getEncryptedData: (endpoint: string) => Promise<ChatRoom[]>;
 }
 
-const SERVER = import.meta.env.VITE_REACT_APP_API_URL;
+const SERVER = import.meta.env.VITE_REACT_APP_API_URL!;
 
-const ChatList: React.FC<ChatListProps> = ({
-  handlePageChange,
-  getEncryptedData,
-}) => {
+const ChatList: React.FC<ChatListProps> = ({ handlePageChange, getEncryptedData }) => {
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
-  const [busy, setBusy] = useState(true);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [socket, setSocket] = useState<Socket | null>(null);
 
-  // tymczasowe dodanie do sklejenia
-  const [deleteId, setDeleteId] = useState<number | null>(null);
-  const [showDeleteAlert, setShowDeleteAlert] = useState(false);
-  const [deleteReason, setDeleteReason] = useState("");
-
-  const token = localStorage.getItem("jwt");
+  // Wyciągnięcie roleId z JWT
+  const token = localStorage.getItem("jwt") || "";
   let roleId = 0;
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1])) as JwtPayload;
+    roleId = typeof payload.roleId === "string" ? parseInt(payload.roleId, 10) : payload.roleId;
+  } catch {}
 
-  if (token) {
+  // Funkcja fetchChats
+  const fetchChats = useCallback(async () => {
+    setLoading(true);
     try {
-      const decoded = jwtDecode<JwtPayload>(token);
-      // console.log(decoded);
-      roleId = decoded.roleId;
-      // userType = decoded.userType;
-    } catch (err) {
-      console.error("Błąd dekodowania tokena:", err);
-    }
-  }
-
-  const fetchChats = async () => {
-    setBusy(true);
-    try {
-      const data: ChatRoom[] = await getEncryptedData("chats");
-      setRooms(data);
+      let data: ChatRoom[];
+      if (roleId === 1) {
+        const res = await fetch(`${SERVER}/admin/chats`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        data = await res.json();
+      } else {
+        data = await getEncryptedData("chats");
+      }
+      setRooms(data.map(r => ({ ...r, status: Number(r.status) })));
     } catch (e) {
-      console.error("Błąd pobierania czatów:", e);
+      console.error("fetchChats error:", e);
     } finally {
-      setBusy(false);
+      setLoading(false);
     }
-  };
+  }, [roleId, token, getEncryptedData]);
 
+  // Socket.io + subskrypcja na eventy
   useEffect(() => {
-    fetchChats();
-  }, []);
+    const sock = io(SERVER, {
+      transports: ["websocket"],
+      auth: { token },
+    });
 
-  const confirmDelete = async (reason: string) => {
-    if (!deleteId) return;
+    setSocket(sock);
+
+    sock.on("connect", () => {
+      console.log("Socket connected:", sock.id);
+      if (roleId === 1) {
+        // dołącz do pokoju adminów
+        sock.emit("join", "adminChats");
+      }
+    });
+
+    sock.on("chatCreated", fetchChats);
+
+    // najpierw pobierz chaty od razu po mount
+    fetchChats();
+
+    return () => {
+      sock.off("chatCreated", fetchChats);
+      sock.disconnect();
+    };
+  }, [fetchChats, roleId, token]);
+
+  // Dla admina tylko unikalne rideId
+  const displayRooms = useMemo(() => {
+    if (roleId !== 1) return rooms;
+    const map = new Map<number, ChatRoom>();
+    rooms.forEach(r => {
+      const ex = map.get(r.rideId);
+      if (!ex || new Date(r.data_zamowienia) > new Date(ex.data_zamowienia)) {
+        map.set(r.rideId, r);
+      }
+    });
+    return Array.from(map.values());
+  }, [rooms, roleId]);
+
+  const changeStatus = async (rideId: number, status: number) => {
     try {
-      await fetch(`${SERVER}/chats/${deleteId}`, {
-        method: "DELETE",
+      await fetch(`${SERVER}/admin/chats/${rideId}/status`, {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ reason }),
+        body: JSON.stringify({ status }),
       });
       await fetchChats();
+      // po zmianie powiadom innych adminów
+      socket?.emit("chatCreated");
     } catch (e) {
-      console.error("Błąd podczas usuwania czatu:", e);
-    } finally {
-      setShowDeleteAlert(false);
-      setDeleteId(null);
-      setDeleteReason("");
+      console.error("changeStatus error:", e);
     }
   };
+
+  const listToRender = roleId === 1 ? displayRooms : rooms;
 
   return (
     <IonPage className="chat-list-page">
       <IonHeader>
-        <IonToolbar className="orange-bar">
+        <IonToolbar>
           <IonButtons slot="start">
             <IonMenuButton />
           </IonButtons>
@@ -110,70 +140,64 @@ const ChatList: React.FC<ChatListProps> = ({
         </IonToolbar>
       </IonHeader>
       <IonContent>
-        <IonLoading isOpen={busy} message="Ładowanie..." />
-
+        <IonLoading isOpen={loading} message="Ładowanie..." />
         <IonList>
-          {rooms.map(({ rideId, data_zamowienia, otherName }) => (
-            <IonCard
-              key={rideId}
-              className="chat-card"
-              button
-              onClick={() => handlePageChange("Chat", { rideId, otherName })}
-            >
-              <IonCardHeader>
-                <IonCardTitle className="chat-card-title">
-                  CZAT: {otherName}{" "}
-                  <span className="chat-ride-badge">Przejazd nr: {rideId}</span>
-                </IonCardTitle>
-                <div className="chat-card-date">
-                  Data przejazdu:{" "}
-                  {new Date(data_zamowienia).toLocaleDateString()}
-                </div>
-              </IonCardHeader>
-
-              {/* Zarządzanie czatami */}
-              {roleId === 1 && (
-                <IonButton
-                  fill="clear"
-                  color="danger"
-                  style={{
-                    position: "absolute",
-                    top: 8,
-                    right: 8,
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation(); // nie otwieraj pokoju
-                    setDeleteId(rideId);
-                    setShowDeleteAlert(true);
-                  }}
-                >
-                  <IonIcon slot="icon-only" icon={trashOutline} />
-                </IonButton>
-              )}
-            </IonCard>
-          ))}
-          {!busy && rooms.length === 0 && (
-            <div className="no-chats">Brak aktywnych rozmów</div>
-          )}
+          {listToRender.map(room => {
+            const statusLabel =
+              room.status === 1
+                ? "Otwarty"
+                : room.status === 2
+                ? "Zakończony"
+                : "Zamknięty";
+            const statusColor =
+              room.status === 1 ? "success" : room.status === 2 ? "warning" : "danger";
+            return (
+              <IonCard
+                key={room.rideId}
+                className="chat-card"
+                button={roleId === 1 || room.status !== 3}
+                onClick={() =>
+                  handlePageChange("Chat", {
+                    rideId: room.rideId,
+                    otherName: room.otherName,
+                  })
+                }
+              >
+                <IonCardHeader className="chat-card-header" style={{ position: "relative", padding: "16px" }}>
+                  <div>
+                    <IonCardTitle className="chat-with-title">
+                      Czat z: {room.otherName}
+                    </IonCardTitle>
+                    <div className="chat-card-date">
+                      {new Date(room.data_zamowienia).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <div style={{ position: "absolute", top: "12px", right: "12px", textAlign: "right" }}>
+                    <IonBadge color={statusColor}>{statusLabel}</IonBadge>
+                    <div className="chat-ride-badge">Czat nr: {room.rideId}</div>
+                  </div>
+                </IonCardHeader>
+                {roleId === 1 && (
+                  <IonSelect
+                    interface="action-sheet"
+                    interfaceOptions={{ cssClass: "chatlist-select-sheet" }}
+                    value={room.status}
+                    placeholder="Zmień status"
+                    onClick={e => e.stopPropagation()}
+                    onIonChange={e => {
+                      e.stopPropagation();
+                      changeStatus(room.rideId, e.detail.value);
+                    }}
+                  >
+                    <IonSelectOption value={1}>Otwarty</IonSelectOption>
+                    <IonSelectOption value={2}>Zakończony</IonSelectOption>
+                    <IonSelectOption value={3}>Zamknięty</IonSelectOption>
+                  </IonSelect>
+                )}
+              </IonCard>
+            );
+          })}
         </IonList>
-
-        {/* Alert do zarządzania usuwaniem czatu */}
-        <IonAlert
-          isOpen={showDeleteAlert}
-          header="Usuwanie czatu"
-          message="Jesteś pewien, że chcesz usunąć ten czat?"
-          buttons={[
-            {
-              text: "Anuluj",
-              role: "cancel",
-              handler: () => setShowDeleteAlert(false),
-            },
-            {
-              text: "Usuń",
-              handler: (data) => confirmDelete(data.reason || ""),
-            },
-          ]}
-        />
       </IonContent>
     </IonPage>
   );

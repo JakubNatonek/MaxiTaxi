@@ -151,10 +151,52 @@
 .cancel-button {
   --border-radius: 10px;
 }
+.order-button {
+  --background: var(--ion-color-primary) !important;          /* pomarańczowe tło */
+  --background-focused: var(--ion-color-primary) !important;
+  --background-hover: var(--ion-color-primary-tint, #ff7f00) !important;
+  --color: var(--ion-color-primary-contrast, #ffffff) !important; /* biały tekst */
+}
 
+/* --- Przycisk „Anuluj zamówienie” --- */
+.cancel-button {
+  --background: transparent !important;                       /* przezroczyste tło */
+  --border-color: var(--ion-color-primary) !important;        /* pomarańczowa ramka */
+  --border-width: 2px !important;
+  --color: var(--ion-color-primary) !important;               /* pomarańczowy tekst */
+  --color-focused: var(--ion-color-primary) !important;
+  --ripple-color: rgba(255, 102, 0, 0.3) !important;
+}
 /* Responsywność */
 @media (min-width: 768px) {
   .car-details {
     grid-template-columns: 1fr 1fr 1fr;
   }
+}
+
+.driver-action-sheet {
+  --background: #2a2a2a !important;   /* Ciężkie ciemne tło */
+  color: #ffffff !important;          /* Domyślny kolor tekstu */
+}
+
+/* Wszystkie teksty i ikony wewnątrz popovera */
+.driver-action-sheet,
+.driver-action-sheet *,
+.driver-action-sheet ion-icon,
+.driver-action-sheet .select-text,
+.driver-action-sheet .select-interface-option {
+  color: #ffffff !important;
+  /* Jeśli jakieś elementy mają własne background, zrób je transparentne */
+  background-color: transparent !important;
+}
+
+/* Gdy radiobutton jest zaznaczony, upewnij się że będzie na pomarańczowo */
+.driver-action-sheet .select-interface-option[selected] .select-icon {
+  color: var(--ion-color-primary) !important;
+}
+
+/* Cancel / OK buttony (jeśli się pojawiają) */
+.driver-action-sheet .popover-button-group button,
+.driver-action-sheet .popover-button-group button * {
+  color: #ffffff !important;
 }
